@@ -104,7 +104,7 @@ def _checklist(items: list[dict]) -> list[str]:
     return out
 
 
-def cmd_render() -> None:
+def cmd_render(edition: str = "") -> None:
     cands = read_json(CANDIDATES)
     if cands is None:
         raise SystemExit("no .cache/candidates.json — run `fetch` first")
@@ -114,6 +114,7 @@ def cmd_render() -> None:
     papers = _pick(cands["papers"], triage.get("papers") if triage else None, limits["pick_papers"])
     posts = _pick(cands["posts"], triage.get("posts") if triage else None, limits["pick_posts"])
     day = cands["date"]
+    name = f"{day}{edition}"  # inbox file / title; state stays per calendar day
 
     # Everything we showed to the LLM counts as seen, picked or not.
     keys = [c["key"] for c in cands["papers"] + cands["posts"]] + cands.get("bootstrap", [])
@@ -141,7 +142,7 @@ def cmd_render() -> None:
         f"triage: {mode}",
         "---",
         "",
-        f"# 每日推送 · {day}",
+        f"# 每日推送 · {name}",
         "",
     ]
     if overview:
@@ -154,14 +155,14 @@ def cmd_render() -> None:
     if rest:
         md += ["## 未入选候选", ""] + [f"- [{c['title']}]({c['url']}) · score {c['score']}" for c in rest] + [""]
     (ROOT / "inbox").mkdir(exist_ok=True)
-    (ROOT / "inbox" / f"{day}.md").write_text("\n".join(md))
+    (ROOT / "inbox" / f"{name}.md").write_text("\n".join(md))
 
-    body = [f"## 📚 {day} 每日推送", ""]
+    body = [f"## 📚 {name} 每日推送", ""]
     if overview:
         body += [f"> {overview}", ""]
     body += [
         "**勾选想精读的条目，然后合并本 PR** —— 下次本地运行（`run-local.sh all`）会为勾选项创建 `to-read` issue 并精读。",
-        f"TL;DR、推荐理由和摘要见本 PR「Files changed」里的 `inbox/{day}.md`。",
+        f"TL;DR、推荐理由和摘要见本 PR「Files changed」里的 `inbox/{name}.md`。",
         "",
     ]
     if papers:
@@ -172,23 +173,24 @@ def cmd_render() -> None:
         f"<sub>候选 {len(cands['papers'])}+{len(cands['posts'])} → 入选 {len(papers)}+{len(posts)} · 精排：{mode} · 由 daily-ingest 自动生成</sub>",
     ]
     (CACHE / "pr_body.md").write_text("\n".join(body) + "\n")
-    title = f"daily: {day} ({len(papers)} papers, {len(posts)} posts)"
+    title = f"daily: {name} ({len(papers)} papers, {len(posts)} posts)"
     (CACHE / "pr_title.txt").write_text(title)
     if gh_out:
         with open(gh_out, "a") as f:
             f.write(f"title={title}\n")
-    log(f"[render] inbox/{day}.md  ({len(papers)} papers, {len(posts)} posts, triage={mode})")
+    log(f"[render] inbox/{name}.md  ({len(papers)} papers, {len(posts)} posts, triage={mode})")
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["fetch", "render"])
     ap.add_argument("--date", help="YYYY-MM-DD (default: today in TECH_TREE_TZ)")
+    ap.add_argument("--edition", default="", help="suffix for a 2nd run on the same day, e.g. -2")
     args = ap.parse_args()
     if args.cmd == "fetch":
         cmd_fetch(date.fromisoformat(args.date) if args.date else today())
     else:
-        cmd_render()
+        cmd_render(args.edition)
 
 
 if __name__ == "__main__":
