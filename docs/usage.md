@@ -21,23 +21,35 @@
 | 确定性步骤 | `pipeline/` | 抓取、打分、去重、渲染、推送、体检。纯 Python，不消耗 token |
 | AI 技能 | `.claude/skills/` | triage（精排）· deep-read（精读）· ingest-wiki（沉淀）· research-topic（调研）· weekly-report（周报） |
 | 知识库守则 | `CLAUDE.md`（= `AGENTS.md`） | 目录约定、笔记格式、写作规则。Claude Code 和 Codex 读同一份 |
-| 定时任务 | Claude 桌面 App →「Scheduled」→ `tech-tree-daily` | 每天 18:00 自动跑一次 |
+| 定时任务 | Claude 桌面 App →「Scheduled」 | `tech-tree-daily` 每天 08:00 出推送；`tech-tree-hourly` 每小时 :30 处理待办 |
 | 阅读站点 | <https://xianbintang.github.io/tech-tree/> | 知识库的网页版，合并到 master 后自动更新 |
 
 ## 2. 每天怎么用（5 分钟）
 
 ```
-18:00  定时任务自动运行 ──▶ 生成「daily: <日期> (N papers, M posts)」PR（+ 飞书推送，如已配置）
+08:00   tech-tree-daily ──▶ 生成「daily: <日期> (N papers, M posts)」PR（+ 飞书推送，如已配置）
   │
-你    打开 daily PR ──▶ 在 PR 描述里勾选想精读的条目 ──▶ Merge
-  │                     （TL;DR / 推荐理由 / 摘要在「Files changed」的 inbox/<日期>.md）
+你      打开 daily PR ──▶ 在 PR 描述里勾选想精读的条目 ──▶ Merge
+  │                       （TL;DR / 推荐理由 / 摘要在「Files changed」的 inbox/<日期>.md）
   │
-次日 18:00  勾选项自动变成 [read] issue ──▶ 本地精读 ──▶「read: <标题>」PR
+每小时:30 tech-tree-hourly 发现勾选 ──▶ [read] issue ──▶ 本地精读 ──▶「read: <标题>」PR
+  │        （每篇约 5 分钟；一次最多 3 篇，多的顺延到下一个小时）
   │
-你    打开 read PR，看笔记 notes/…、概念页 wiki/concepts/… ──▶ Merge（issue 自动关闭）
+你      打开 read PR，看笔记 notes/…、概念页 wiki/concepts/… ──▶ Merge（issue 自动关闭）
 ```
 
-手机上用 GitHub App 就能完成勾选和合并，电脑只需要 18:00 时开着 Claude 桌面 App。
+手机上用 GitHub App 就能完成勾选和合并。电脑需要开着 Claude 桌面 App（关着时错过的任务会在下次打开时补跑）。
+**合并后多久出结果：** 下一个整点半（最长约 1 小时）开始处理，通知见下文「结果在哪看」。
+
+### 结果在哪看
+
+| 渠道 | 内容 |
+|---|---|
+| issue 评论 / GitHub 通知 | 精读完成后，`[read]` issue 下会出现「📖 精读完成：<PR 链接>」 |
+| 飞书（如已配置） | 每日推送、精读完成、调研完成、周报各推一条 |
+| PR 列表 | 按标签筛选：`daily` 推送、`note` 精读笔记、`report` 报告；打开后看「Files changed」 |
+| 阅读站点 | 合并后自动更新：<https://xianbintang.github.io/tech-tree/> |
+| 本地日志 | `.cache/logs/<时间>-<命令>.log`，每次运行一份，保留 30 天 |
 
 **不想读的推送：** 什么都不勾，直接 Merge 或 Close 都可以。推过的内容已经记入去重，不会重复推送。
 **PR 堆积了：** daily PR 之间互不冲突，可以攒几天一起处理。
@@ -70,8 +82,8 @@
 
 | 方式 | 何时执行 |
 |---|---|
-| 在 daily PR 里勾选后合并 | 下次运行 |
-| 新建 issue，用「📖 精读一篇论文 / 博文」模板 | 下次运行 |
+| 在 daily PR 里勾选后合并 | 一小时内（每小时 :30 检查） |
+| 新建 issue，用「📖 精读一篇论文 / 博文」模板 | 一小时内 |
 | `scripts/run-local.sh read 2609.23377`（也可以是 URL 或 issue 号） | 立即执行（会自动建 issue 以便追溯） |
 
 每次运行默认最多精读 3 篇（`QUEUE_READS`），多出来的排到下一次。
@@ -89,14 +101,14 @@
 ### 3.4 专题调研（research-topic）
 
 1. 新建 issue，选「🔎 调研一个主题」模板，写想回答的问题、背景和深度（brief 快速简报 / deep 深度调研）。
-2. 下次运行时（每次最多 1 个），Claude 先查你自己的知识库，再上网补充。产出 `reports/topics/<slug>.md`：TL;DR、方案对比表、对我们的建议、推荐精读清单。
+2. 一小时内（每次检查最多处理 1 个），Claude 先查你自己的知识库，再上网补充。产出 `reports/topics/<slug>.md`：TL;DR、方案对比表、对我们的建议、推荐精读清单。
 3. 报告 PR 里的推荐精读清单也是勾选框。勾选后合并，这些论文会自动进入精读队列。
 
 想立即执行：`scripts/run-local.sh topic <issue号>`。
 
 ### 3.5 周报（weekly-report）
 
-定时任务每周日会额外生成 `reports/weekly/<年>-W<周>.md`，内容包括：本周数字、3–5 条跨论文洞见、趋势、知识图谱变化、积压清单、下周建议。
+每周日 08:00 的定时运行会额外生成 `reports/weekly/<年>-W<周>.md`，内容包括：本周数字、3–5 条跨论文洞见、趋势、知识图谱变化、积压清单、下周建议。
 手动生成：`scripts/run-local.sh report`。
 
 ### 3.6 知识库问答（query）
@@ -125,7 +137,9 @@ cd ~/workspace/tech-tree && claude
 
 | 命令 | 作用 |
 |---|---|
-| `scripts/run-local.sh all` | 依次跑 sync → queue → daily（定时任务跑的就是这条） |
+| `scripts/run-local.sh all` | sync → queue → daily，周日再加 report（每天 08:00 定时跑） |
+| `scripts/run-local.sh tick` | sync → queue，没有待办就立即结束（每小时 :30 定时跑） |
+| `scripts/run-local.sh bg <命令…>` | 在后台运行任意命令并立即返回，日志写入 `.cache/logs/` |
 | `scripts/run-local.sh daily [YYYY-MM-DD]` | 抓取 + 精排，生成 daily PR |
 | `scripts/run-local.sh sync` | 最近 14 天内已合并 PR 里的勾选项转成 `to-read` issue（幂等，重复跑不会重复建） |
 | `scripts/run-local.sh queue` | 处理打开状态的 `to-read` / `research-topic` issue |
@@ -188,8 +202,9 @@ read PR「Closes #N」 ── 你 Merge ──▶ issue 自动关闭
 
 | 现象 | 原因 / 处理 |
 |---|---|
-| 18:00 没有生成 PR | 桌面 App 没开，或定时任务在等权限确认。打开侧边栏「Scheduled」→ `tech-tree-daily` 查看；App 关着时错过的任务会在下次启动时补跑 |
-| `another run in progress (.cache/lock)` | 上一次运行还没结束，或异常退出后锁没删。确认没有在跑后执行 `rmdir .cache/lock` |
+| 08:00 没有生成 PR | 先看 `.cache/logs/` 里最新的 `*-all.log`；没有日志说明任务没启动：桌面 App 没开，或定时任务在等权限确认。打开侧边栏「Scheduled」→ `tech-tree-daily` 查看；App 关着时错过的任务会在下次启动时补跑 |
+| 日志里出现 `another run in progress … skipping` | 正常：上一次运行还没结束，本次跳过。锁里记录了进程号，进程不在了会自动清理，一般不用手动处理 |
+| 定时任务会话显示「完成」，但 PR 还没出来 | 正常：定时任务只负责在后台启动脚本，然后就结束；实际进度看 `.cache/logs/` |
 | `working tree has uncommitted KB changes` | 主仓库的 `inbox/ notes/ wiki/ …` 下有未提交的改动。先提交或 stash；自己手改知识库请走分支 + PR |
 | PR 里写「精排：keyword」 | 当天 LLM 精排失败，已回退到关键词排序，不影响使用 |
 | 某个博客一直没内容 | 可能是那段时间没更新，也可能 feed 失效。看运行日志里的 `[WARN]`，或参考配置手册里的「验证订阅源」 |
