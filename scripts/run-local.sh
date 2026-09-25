@@ -10,10 +10,12 @@
 #
 #   AGENT=codex scripts/run-local.sh read 2609.23377     # use Codex instead of Claude Code
 #   NO_PR=1 scripts/run-local.sh daily                   # write files only, no branch/PR
+#   BASE=some-branch scripts/run-local.sh daily          # branch off / open PR against another base
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 AGENT=${AGENT:-claude}
+BASE=${BASE:-master}
 TODAY=$(TZ=Asia/Shanghai date +%F)
 TOOLS="Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Bash(uv run python -m pipeline.*),Bash(ls:*),Bash(gh issue view:*)"
 TRAILER="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
@@ -32,8 +34,8 @@ start_branch() {
     echo "working tree has uncommitted KB changes; commit or stash first" >&2; exit 1
   fi
   ORIG_BRANCH=$(git branch --show-current)
-  git fetch -q origin master
-  git switch -q -c "$1" origin/master
+  git fetch -q origin "$BASE"
+  git switch -q -c "$1" "origin/$BASE"
 }
 
 finish_pr() {  # $1 branch  $2 title  $3 label  $4.. paths
@@ -47,7 +49,7 @@ finish_pr() {  # $1 branch  $2 title  $3 label  $4.. paths
   git push -q -u origin "$branch"
   [ -s .cache/pr_body.md ] || echo "$title" > .cache/pr_body.md
   printf '\n\n<sub>本地运行 · agent: %s</sub>\n' "$AGENT" >> .cache/pr_body.md
-  gh pr create --base master --head "$branch" --title "$title" --label "$label" --body-file .cache/pr_body.md
+  gh pr create --base "$BASE" --head "$branch" --title "$title" --label "$label" --body-file .cache/pr_body.md
   git switch -q "$ORIG_BRANCH"
 }
 
