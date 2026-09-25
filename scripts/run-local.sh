@@ -152,6 +152,12 @@ case "${1:-}" in
     [ -s .cache/pr_body.md ] || echo "## 精读 #$issue" > .cache/pr_body.md
     printf '\n\nCloses #%s\n' "$issue" >> .cache/pr_body.md
     title=$(jq -r '.title | sub("^\\[read\\] *"; "")' .cache/issue.json)
+    # Issues opened from a bare arXiv ID / URL: rename to the real title from the note.
+    note=$(grep -rlx "issue: $issue" notes 2>/dev/null | head -1 || true)
+    if [ -n "$note" ] && [ "$title" = "$target" ]; then
+      real=$(sed -n 's/^title: *"\{0,1\}\(.*[^"]\)"\{0,1\} *$/\1/p' "$note" | head -1)
+      if [ -n "$real" ]; then title=$real; gh issue edit "$issue" --title "[read] $title" >/dev/null; fi
+    fi
     url=$(finish_pr "read/$issue" "read: $title" note sources notes wiki | tail -1)
     release
     echo "$url"
