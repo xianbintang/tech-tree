@@ -30,11 +30,13 @@ GitHub 只是 issue / PR 账本（本地 `gh` 操作），每一步都有 PR 或
 [Karpathy LLM Wiki](https://github.com/Astro-Han/karpathy-llm-wiki)（raw → wiki → schema 三层，ingest / query / lint），
 以及本机已装的 dailypaper-skills（抓取打分逻辑移植自其 `fetch_and_score.py`）。
 
+📘 **[使用手册](docs/usage.md)** · ⚙️ **[配置手册](docs/configuration.md)**
+
 ## 日常怎么用
 
 | 想做的事 | 操作 |
 |---|---|
-| 每天自动跑 | 本地定时任务执行 `scripts/run-local.sh all`（sync → queue → daily） |
+| 每天自动跑 | 桌面 App 定时任务 `tech-tree-daily` 每天 18:00 执行 `scripts/run-local.sh all`（sync → queue → daily，周日加周报） |
 | 看今天推送 | 打开 `daily` PR，勾选想读的条目，合并；下次运行自动精读 |
 | 精读指定论文 | 开「📖 精读」issue 排队，或立即 `scripts/run-local.sh read 2609.23377` |
 | 调研一个主题 | 开「🔎 调研」issue 排队，或立即 `scripts/run-local.sh topic <issue>` |
@@ -60,7 +62,7 @@ reports/  周报 / 专题   state/  去重记录   CLAUDE.md  知识库 schema �
 ```bash
 uv sync
 scripts/setup-github.sh        # 建标签 + 启用 Pages
-# 可选推送：export FEISHU_WEBHOOK=...（写进 ~/.zshrc 等本地环境，不上传）
+echo 'FEISHU_WEBHOOK=https://open.feishu.cn/...' > .env.local   # 可选推送；git 已忽略，不会上传
 ```
 
 ## 安全
