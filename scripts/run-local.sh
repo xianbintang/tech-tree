@@ -19,6 +19,9 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 
+# Local-only secrets (FEISHU_WEBHOOK, …). Git-ignored; never leaves this machine.
+if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi
+
 AGENT=${AGENT:-claude}
 BASE=${BASE:-master}
 TODAY=$(TZ=Asia/Shanghai date +%F)

@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 rm -rf _site_src site
 mkdir -p _site_src
-for d in wiki notes reports inbox sources; do
+for d in docs wiki notes reports inbox sources; do
   [ -d "$d" ] && cp -R "$d" _site_src/
 done
 find _site_src -name .gitkeep -delete
@@ -15,6 +15,8 @@ latest() { { ls -1 "_site_src/$1" 2>/dev/null | grep '\.md$' || true; } | sort -
   echo "# tech-tree"
   echo
   echo "概念 $(count wiki) · 笔记 $(count notes) · 报告 $(count reports) · 推送 $(count inbox)"
+  echo
+  echo "[使用手册](docs/usage.md) · [配置手册](docs/configuration.md)"
   echo
   echo "## 最新周报"; latest reports/weekly 4; echo
   echo "## 最新专题"; latest reports/topics 8; echo
