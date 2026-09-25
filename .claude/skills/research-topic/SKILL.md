@@ -50,7 +50,7 @@ depth: brief | deep
 同时：
 - 发现值得沉淀的新概念 → 按 `ingest-wiki` 规则建/更新概念页（来源写报告 slug）。
 - 写 `.cache/pr_body.md`：摘要 + 文件列表 + 推荐精读清单。清单**必须**用下面的格式，
-  用户勾选后合并 PR，`inbox-to-issues` workflow 会自动为勾选项建 `to-read` issue 并精读：
+  用户勾选后合并 PR，下次 `run-local.sh sync` 会为勾选项建 `to-read` issue 并排队精读：
   ```
   - [ ] **<论文标题>** — <一句话理由> <!-- read type=paper id=<arXiv ID> url=https://arxiv.org/abs/<arXiv ID> -->
   - [ ] **<博文标题>** — <理由> <!-- read type=post id=<url 的简短 slug> url=<原文 URL> -->

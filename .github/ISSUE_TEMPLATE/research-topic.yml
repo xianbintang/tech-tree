@@ -1,5 +1,5 @@
 name: 🔎 调研一个主题
-description: 提交后自动触发 research-topic，先查知识库再上网，产出专题报告
+description: 提交后由下次本地运行（run-local.sh queue / all）调研：先查知识库再上网，产出专题报告
 title: "[topic] "
 labels: ["research-topic"]
 body:

@@ -15,4 +15,4 @@ body:
       label: 为什么值得订阅
   - type: markdown
     attributes:
-      value: 评论 `@claude 把这个源加到 config/sources.yaml` 即可让 Claude 验证并提 PR。
+      value: 本地让 Claude Code 验证该源并加入 config/sources.yaml 后提 PR。

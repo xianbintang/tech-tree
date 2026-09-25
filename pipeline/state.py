@@ -2,7 +2,7 @@
 
 One file per day (state/seen/YYYY-MM-DD.txt) so parallel daily PRs never conflict.
 `.cache/extra_seen.txt` holds keys from still-open daily/* branches (collected by the
-workflow), so an unmerged PR's items are not re-pushed the next day.
+run-local.sh), so an unmerged PR's items are not re-pushed the next day.
 """
 from __future__ import annotations
 

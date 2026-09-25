@@ -75,10 +75,10 @@ sources: [2609.23377, 2609.28963]   # 支撑本页结论的笔记
 ## 可追溯性（GitHub 即日志）
 
 - 每个 AI 动作 = 一个 PR；要做的事 = 一个 issue。分支：`daily/<date>`、`read/<issue>`、`topic/<issue>`、`report/<week>`。
-- workflow 自动任务（daily / deep-read / research / weekly，prompt 里写了“只写文件”）：**只写文件，不要 git commit / push / 开 PR**，workflow 会统一处理。
-- 在 issue / PR 评论里被 `@claude` 召唤时：按 claude-code-action 的默认行为在分支上提交，并遵守本文件的全部约定。
+- **所有 AI 工作都在本地运行**（Claude Code / Codex，用本机登录的订阅），GitHub 只作为 issue / PR 账本，通过本地 `gh` 操作。不在 GitHub Actions 里放任何 LLM 凭据。
+- 由 `scripts/run-local.sh` 调起的任务（prompt 里写了“只写文件”）：**只写文件，不要 git commit / push / 开 PR**，脚本统一建分支、提交、`gh pr create`。
   把 PR 描述写到 `.cache/pr_body.md`（说明做了什么、新增/修改了哪些页面、仍有疑问的地方）。
-- 在本地运行时：用 `scripts/run-local.sh`，它会建分支、调用 agent、`gh pr create`。
+- 用户在交互式会话里直接让你做的事：同样遵守本文件约定；需要留痕时走 `run-local.sh read/topic` 或手动开 PR。
 
 ## 常用命令
 
@@ -88,5 +88,6 @@ uv run python -m pipeline.daily fetch     # 抓取候选 → .cache/candidates.j
 uv run python -m pipeline.daily render    # 渲染 inbox + PR 描述
 uv run python -m pipeline.wiki_lint       # 知识库体检
 uv run python -m pipeline.week_context    # 本周上下文 → .cache/week.json
-scripts/run-local.sh daily|read <issue>|topic <issue>|report   # 本地跑完整流程并开 PR
+scripts/run-local.sh all                  # sync → queue → daily（定时任务跑这条）
+scripts/run-local.sh read <id>|topic <issue>|report|lint
 ```

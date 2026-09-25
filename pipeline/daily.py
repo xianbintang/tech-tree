@@ -160,7 +160,7 @@ def cmd_render() -> None:
     if overview:
         body += [f"> {overview}", ""]
     body += [
-        "**勾选想精读的条目，然后合并本 PR** —— 合并后会为勾选项自动创建 `to-read` issue 并触发精读。",
+        "**勾选想精读的条目，然后合并本 PR** —— 下次本地运行（`run-local.sh all`）会为勾选项创建 `to-read` issue 并精读。",
         f"TL;DR、推荐理由和摘要见本 PR「Files changed」里的 `inbox/{day}.md`。",
         "",
     ]

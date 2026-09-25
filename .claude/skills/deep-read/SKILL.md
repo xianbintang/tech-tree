@@ -7,7 +7,7 @@ description: 精读一篇论文或技术博文，生成结构化中文笔记并�
 
 ## 1. 确定对象
 
-- 来自 issue：读 `.cache/issue.json`（workflow 已准备好：`number, title, body`）或 `gh issue view <N>`。body 里有类型、ID、链接。
+- 来自 issue：读 `.cache/issue.json`（run-local.sh 已准备好：`number, title, body`）或 `gh issue view <N>`。body 里有类型、ID、链接。
 - 来自用户直接给的 arXiv ID / URL 也可以。
 - 已存在 `notes/papers/<id>.md` 时：不要重写，改为补充/修订，并在 PR 描述里说明。
 
@@ -73,4 +73,4 @@ frontmatter 按 `CLAUDE.md` 的规定（`issue:` 填 issue 编号）。正文结
   - <follow-up 建议，用户可转成 issue>
   ```
 - 写 `.cache/notify.txt`：3 行以内的推送摘要（标题 + 一句话 + 评分）。
-- 在 Actions 中不做 git 操作；本地由 `scripts/run-local.sh` 处理。
+- 不做 git 操作；分支、提交、PR 由 `scripts/run-local.sh` 处理。

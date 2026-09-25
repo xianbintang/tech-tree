@@ -1,6 +1,6 @@
 ---
 name: triage
-description: 每日推送的 LLM 精排。读取 .cache/candidates.json（关键词粗排后的论文/博文候选），按用户研究方向挑选并写中文 TL;DR 与推荐理由，输出 .cache/triage.json。在 daily-ingest 流程中、或用户说“精排今天的候选”时使用。
+description: 每日推送的 LLM 精排。读取 .cache/candidates.json（关键词粗排后的论文/博文候选），按用户研究方向挑选并写中文 TL;DR 与推荐理由，输出 .cache/triage.json。在 run-local.sh daily 流程中、或用户说“精排今天的候选”时使用。
 ---
 
 # Triage：每日候选精排

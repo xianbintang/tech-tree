@@ -1,5 +1,5 @@
 name: 📖 精读一篇论文 / 博文
-description: 提交后自动触发 deep-read，生成笔记并更新知识库
+description: 提交后由下次本地运行（run-local.sh queue / all）精读，生成笔记并更新知识库
 title: "[read] "
 labels: ["to-read"]
 body:
