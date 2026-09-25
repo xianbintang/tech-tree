@@ -1,0 +1,124 @@
+name: daily-ingest
+
+# 每天北京时间 08:00：抓取 → LLM 精排 → 开 daily/<date> PR → 推送
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "YYYY-MM-DD（默认今天，北京时间）"
+        required: false
+      skip_llm:
+        description: "跳过 LLM 精排，只用关键词排序"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+concurrency:
+  group: daily-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HAS_LLM: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' || secrets.ANTHROPIC_API_KEY != '' || secrets.OPENAI_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync
+
+      - name: Collect keys from still-open daily PR branches (dedup)
+        run: |
+          mkdir -p .cache
+          : > .cache/extra_seen.txt
+          for b in $(git branch -r --list 'origin/daily/*'); do
+            git ls-tree -r --name-only "$b" state/seen | while read -r f; do
+              git show "$b:$f" >> .cache/extra_seen.txt
+            done
+          done
+          wc -l .cache/extra_seen.txt
+
+      - name: Fetch candidates
+        run: uv run python -m pipeline.daily fetch ${{ inputs.date && format('--date {0}', inputs.date) || '' }}
+
+      - name: LLM triage
+        if: env.HAS_LLM == 'true' && !inputs.skip_llm
+        continue-on-error: true   # 精排失败时回退到关键词排序，当天推送不中断
+        uses: ./.github/actions/run-agent
+        with:
+          agent: ${{ vars.AI_AGENT || 'claude' }}
+          model: ${{ vars.TRIAGE_MODEL }}
+          max-turns: "30"
+          allowed-tools: "Read,Write,Glob,Grep"
+          prompt: |
+            按 .claude/skills/triage/SKILL.md 执行每日精排：
+            读取 .cache/candidates.json 与 config/interests.yaml，输出 .cache/triage.json。
+            只写这一个文件。
+          claude-oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate triage output
+        run: |
+          if [ -f .cache/triage.json ] && ! python3 -m json.tool .cache/triage.json > /dev/null; then
+            echo "::warning::triage.json is not valid JSON, falling back to keyword ranking"
+            rm .cache/triage.json
+          fi
+
+      - name: Render inbox
+        id: render
+        run: uv run python -m pipeline.daily render
+
+      - name: Resolve date
+        id: meta
+        run: echo "date=$(python3 -c 'import json;print(json.load(open(".cache/candidates.json"))["date"])')" >> "$GITHUB_OUTPUT"
+
+      - name: Open daily PR
+        id: pr
+        if: steps.render.outputs.count != '0'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: daily/${{ steps.meta.outputs.date }}
+          title: ${{ steps.render.outputs.title }}
+          body-path: .cache/pr_body.md
+          commit-message: |
+            daily: ${{ steps.meta.outputs.date }}
+
+            Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+          labels: daily
+          add-paths: |
+            inbox/**
+            state/**
+          delete-branch: true
+
+      - name: Commit dedup state only (nothing picked today)
+        if: steps.render.outputs.count == '0' && steps.render.outputs.state_changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/
+          git commit -m "state: seen keys for ${{ steps.meta.outputs.date }}" && git push || true
+
+      - name: Notify
+        if: steps.pr.outputs.pull-request-url != ''
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          uv run python -m pipeline.notify \
+            --title "📚 $(cat .cache/pr_title.txt)" \
+            --text "$(grep -E '^(> |- \[ \])' .cache/pr_body.md | sed -E 's/<!--.*-->//; s/^- \[ \] /• /; s/\*\*//g' | head -16)" \
+            --url "${{ steps.pr.outputs.pull-request-url }}"

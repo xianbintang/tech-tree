@@ -1,0 +1,106 @@
+name: research
+
+# 给 issue 打上 research-topic 标签（或 workflow_dispatch）→ 专题调研 → 开 topic/<issue> PR
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "issue 编号"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: research-${{ inputs.issue || github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  read:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'research-topic'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      ISSUE: ${{ inputs.issue || github.event.issue.number }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync
+
+      - name: Load issue
+        id: issue
+        run: |
+          mkdir -p .cache
+          gh issue view "$ISSUE" --json number,title,body,labels > .cache/issue.json
+          title=$(jq -r '.title | sub("^\\[topic\\] *"; "")' .cache/issue.json)
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+          echo "TODAY=$(TZ=Asia/Shanghai date +%F)" >> "$GITHUB_ENV"
+          gh issue edit "$ISSUE" --add-label researching || true
+          gh issue comment "$ISSUE" --body "🤖 开始调研：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Research
+        uses: ./.github/actions/run-agent
+        with:
+          agent: ${{ vars.AI_AGENT || 'claude' }}
+          model: ${{ vars.RESEARCH_MODEL }}
+          max-turns: "150"
+          prompt: |
+            按 .claude/skills/research-topic/SKILL.md 调研 issue #${{ env.ISSUE }}（内容在 .cache/issue.json）。
+            今天日期：${{ env.TODAY }}。
+            只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。
+          claude-oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint
+        run: uv run python -m pipeline.wiki_lint || true
+
+      - name: PR body
+        env:
+          TITLE: ${{ steps.issue.outputs.title }}
+        run: |
+          [ -s .cache/pr_body.md ] || echo "## 调研：$TITLE" > .cache/pr_body.md
+          printf '\n\nCloses #%s\n' "$ISSUE" >> .cache/pr_body.md
+
+      - name: Open PR
+        id: pr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: topic/${{ env.ISSUE }}
+          title: "topic: ${{ steps.issue.outputs.title }}"
+          body-path: .cache/pr_body.md
+          commit-message: |
+            topic: ${{ steps.issue.outputs.title }} (#${{ env.ISSUE }})
+
+            Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+          labels: report
+          add-paths: |
+            reports/**
+            wiki/**
+          delete-branch: true
+
+      - name: Notify
+        if: steps.pr.outputs.pull-request-url != ''
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TITLE: ${{ steps.issue.outputs.title }}
+        run: |
+          touch .cache/notify.txt
+          uv run python -m pipeline.notify --title "🔎 调研完成：$TITLE" \
+            --text-file .cache/notify.txt --url "${{ steps.pr.outputs.pull-request-url }}"
+
+      - name: Report failure on issue
+        if: failure()
+        run: |
+          gh issue comment "$ISSUE" --body "❌ 调研失败，日志：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh issue edit "$ISSUE" --remove-label researching || true

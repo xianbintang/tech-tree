@@ -1,0 +1,53 @@
+# 订阅源。新增源：开一个 "add-source" issue，或直接改这里提 PR。
+# type:
+#   rss        —— RSS/Atom，按发布时间窗口过滤
+#   html_links —— 没有 RSS 的站点：抓列表页，用正则提取文章链接，按“首次见到”判新
+# weight：加到关键词得分上。高信噪比的源（个人技术博客、实验室 blog）给高 weight，
+#          保证即使关键词命中少也能进入 LLM 精排候选。
+
+papers:
+  arxiv:
+    categories: [cs.DC, cs.LG, cs.AI, cs.SE, cs.OS, cs.CL]
+    max_results_per_day: 1500  # 6 个分类每天投稿量约 1000+
+  huggingface:
+    daily: true
+    trending: true
+
+posts:
+  window_days: 2   # RSS 只看最近 N 天发布的
+  feeds:
+    # —— AI lab / 公司 ——
+    - {name: OpenAI News, type: rss, url: "https://openai.com/news/rss.xml", weight: 1}
+    - {name: Google DeepMind, type: rss, url: "https://deepmind.google/blog/rss.xml", weight: 1}
+    - {name: Google Research, type: rss, url: "https://research.google/blog/rss/", weight: 0}
+    - {name: Hugging Face Blog, type: rss, url: "https://huggingface.co/blog/feed.xml", weight: 1}
+    - {name: Thinking Machines, type: rss, url: "https://thinkingmachines.ai/blog/index.xml", weight: 3}
+    - {name: Meta Engineering, type: rss, url: "https://engineering.fb.com/feed/", weight: 0}
+    - {name: GitHub Blog, type: rss, url: "https://github.blog/feed/", weight: 0}
+    - name: Anthropic Engineering
+      type: html_links
+      url: "https://www.anthropic.com/engineering"
+      pattern: 'href="(/engineering/[a-z0-9-]+)"'
+      base: "https://www.anthropic.com"
+      weight: 4
+    - name: Anthropic Research
+      type: html_links
+      url: "https://www.anthropic.com/research"
+      pattern: 'href="(/research/[a-z0-9-]+)"'
+      base: "https://www.anthropic.com"
+      weight: 2
+    # —— 训练 / 推理系统 ——
+    - {name: vLLM Blog, type: rss, url: "https://vllm.ai/blog/rss.xml", weight: 2}
+    - {name: PyTorch Blog, type: rss, url: "https://pytorch.org/blog/feed/", weight: 1}
+    - {name: SemiAnalysis, type: rss, url: "https://newsletter.semianalysis.com/feed", weight: 1}
+    # —— 沙箱 / 云原生 infra ——
+    - {name: Cloudflare Blog, type: rss, url: "https://blog.cloudflare.com/rss/", weight: 0}
+    - {name: Fly.io Blog, type: rss, url: "https://fly.io/blog/feed.xml", weight: 1}
+    - {name: Kubernetes Blog, type: rss, url: "https://kubernetes.io/feed.xml", weight: 0}
+    # —— 个人高信噪比博客 ——
+    - {name: Lilian Weng, type: rss, url: "https://lilianweng.github.io/index.xml", weight: 4}
+    - {name: Chip Huyen, type: rss, url: "https://huyenchip.com/feed.xml", weight: 3}
+    - {name: Sebastian Raschka, type: rss, url: "https://magazine.sebastianraschka.com/feed", weight: 2}
+    - {name: Interconnects (Nathan Lambert), type: rss, url: "https://www.interconnects.ai/feed", weight: 3}
+    - {name: Latent Space, type: rss, url: "https://www.latent.space/feed", weight: 1}
+    - {name: Simon Willison, type: rss, url: "https://simonwillison.net/atom/everything/", weight: 0}

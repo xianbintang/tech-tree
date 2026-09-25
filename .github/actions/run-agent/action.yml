@@ -1,0 +1,59 @@
+name: Run AI agent
+description: >-
+  Run Claude Code (default) or Codex on a prompt inside the checked-out repo.
+  The agent only writes files; the calling workflow commits and opens the PR.
+  Switch engines with the repo variable AI_AGENT = claude | codex.
+
+inputs:
+  prompt:
+    description: Task prompt
+    required: true
+  agent:
+    description: claude | codex
+    default: claude
+  allowed-tools:
+    description: Claude Code --allowedTools list
+    default: "Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Bash(uv run python -m pipeline.*),Bash(ls:*),Bash(gh issue view:*)"
+  max-turns:
+    default: "80"
+  model:
+    description: Optional model override
+    default: ""
+  claude-oauth-token:
+    default: ""
+  anthropic-api-key:
+    default: ""
+  openai-api-key:
+    default: ""
+  github-token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Claude Code
+      if: inputs.agent != 'codex'
+      uses: anthropics/claude-code-action@v1
+      with:
+        prompt: ${{ inputs.prompt }}
+        claude_code_oauth_token: ${{ inputs.claude-oauth-token }}
+        anthropic_api_key: ${{ inputs.anthropic-api-key }}
+        # We never let the agent push; a plain token is enough and avoids
+        # requiring the Claude GitHub App for automation runs.
+        github_token: ${{ inputs.github-token }}
+        allowed_bots: "github-actions[bot]"
+        claude_args: >-
+          --max-turns ${{ inputs.max-turns }}
+          --allowedTools "${{ inputs.allowed-tools }}"
+          ${{ inputs.model && format('--model {0}', inputs.model) || '' }}
+
+    - name: Codex
+      if: inputs.agent == 'codex'
+      uses: openai/codex-action@v1
+      with:
+        prompt: ${{ inputs.prompt }}
+        openai-api-key: ${{ inputs.openai-api-key }}
+        # Ephemeral runner + agent needs network for WebFetch-style reading.
+        sandbox: danger-full-access
+        allow-bots: true
+        model: ${{ inputs.model }}

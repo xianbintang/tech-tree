@@ -1,0 +1,78 @@
+name: weekly-report
+
+# 每周日北京时间 20:00：汇总本周 → reports/weekly/YYYY-Www.md → 开 PR → 推送
+on:
+  schedule:
+    - cron: "0 12 * * 0"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "回看天数"
+        default: "7"
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync
+
+      - name: Collect week context
+        id: meta
+        run: |
+          uv run python -m pipeline.week_context --days ${{ inputs.days || '7' }}
+          echo "week=$(TZ=Asia/Shanghai date +%G-W%V)" >> "$GITHUB_OUTPUT"
+          echo "today=$(TZ=Asia/Shanghai date +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Write report
+        uses: ./.github/actions/run-agent
+        with:
+          agent: ${{ vars.AI_AGENT || 'claude' }}
+          model: ${{ vars.REPORT_MODEL }}
+          allowed-tools: "Read,Write,Edit,Glob,Grep"
+          prompt: |
+            按 .claude/skills/weekly-report/SKILL.md 生成周报 reports/weekly/${{ steps.meta.outputs.week }}.md。
+            本周上下文在 .cache/week.json，今天是 ${{ steps.meta.outputs.today }}。
+            只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。
+          claude-oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Open PR
+        id: pr
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: report/${{ steps.meta.outputs.week }}
+          title: "report: 学习周报 ${{ steps.meta.outputs.week }}"
+          body-path: .cache/pr_body.md
+          commit-message: |
+            report: weekly ${{ steps.meta.outputs.week }}
+
+            Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+          labels: report
+          add-paths: reports/**
+          delete-branch: true
+
+      - name: Notify
+        if: steps.pr.outputs.pull-request-url != ''
+        env:
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          touch .cache/notify.txt
+          uv run python -m pipeline.notify --title "🗓️ 学习周报 ${{ steps.meta.outputs.week }}" \
+            --text-file .cache/notify.txt --url "${{ steps.pr.outputs.pull-request-url }}"
