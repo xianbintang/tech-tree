@@ -1,0 +1,13 @@
+# 推送渠道。凭据只放在 GitHub Secrets / 本地环境变量里，这里只写开关。
+# 某渠道开启但对应环境变量缺失时自动跳过，不会报错。
+channels:
+  feishu:
+    enabled: true
+    env: FEISHU_WEBHOOK            # 飞书自定义机器人 webhook URL
+  slack:
+    enabled: false
+    env: SLACK_WEBHOOK             # Slack incoming webhook URL
+  telegram:
+    enabled: false
+    env_token: TELEGRAM_BOT_TOKEN
+    env_chat: TELEGRAM_CHAT_ID

@@ -1,0 +1,18 @@
+name: ➕ 新增订阅源
+description: 建议加入每日拉取的博客 / 实验室 / RSS
+title: "[source] "
+labels: ["add-source"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: RSS 地址或列表页 URL
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 为什么值得订阅
+  - type: markdown
+    attributes:
+      value: 本地让 Claude Code 验证该源并加入 config/sources.yaml 后提 PR。

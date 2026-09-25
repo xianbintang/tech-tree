@@ -1,0 +1,26 @@
+name: 🔎 调研一个主题
+description: 提交后由下次本地运行（run-local.sh queue / all）调研：先查知识库再上网，产出专题报告
+title: "[topic] "
+labels: ["research-topic"]
+body:
+  - type: textarea
+    id: questions
+    attributes:
+      label: 想回答的问题
+      description: 越具体越好，列 2–5 个
+      placeholder: |
+        - 主流 agent RL 框架的 rollout 与训练如何解耦？
+        - 沙箱侧需要提供怎样的并发与冷启动能力？
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 背景 / 为什么现在要调研
+  - type: dropdown
+    id: depth
+    attributes:
+      label: 深度
+      options: ["brief（快速简报，~30 分钟）", "deep（深度调研，≥8 个来源）"]
+    validations:
+      required: true

@@ -1,0 +1,134 @@
+# 研究兴趣画像 —— 关键词打分（Python 粗排）与 LLM 精排（triage skill）共用。
+# 迁移自 ~/.claude/skills/_shared/user-config.json（2026-09-25）。
+
+research_direction:
+  summary: "Agentic RL 训练基础设施：沙箱/执行环境、训练系统与调度、code/terminal/computer-use agent 的训练与评测"
+  persona: >-
+    用户的研究方向是 agentic RL 训练基础设施（沙箱与执行环境、训练系统与 GPU 调度、
+    code/terminal/computer-use agent 的训练与评测）。用户本职是做沙箱平台与调度系统的，
+    看论文第一关心「这套东西在生产上跑得起来吗、成本和密度是多少、我们的平台要补什么能力」。
+  focus_areas:
+    - agentic RL / RLVR 后训练算法与训练系统（rollout、off-policy、GRPO、抢占、样本级派发）
+    - 沙箱与执行环境基础设施（microVM、容器运行时、隔离、密度、超卖、冷启动、镜像分发）
+    - 训练侧系统工程（GPU 调度、KV cache、推理服务、checkpoint、弹性与容错）
+    - code / SWE / terminal / computer-use / GUI agent 的训练、环境合成与评测基准
+    - agent 轨迹数据、环境构造与可验证奖励的工程实现
+  adjacent_areas:
+    - LLM 推理与服务优化（只在与训练吞吐/成本相关时才算相关）
+    - 长程 agent 架构、记忆与上下文压缩（与训练成本相关时算相关）
+  irrelevant_areas:
+    - 医学影像与生物医药
+    - 语音合成与音频生成
+    - 天气气候预测
+    - 金融交易与推荐系统
+    - 纯视觉生成 / 视频生成（除非直接服务于 agent 训练环境）
+    - 机器人本体控制与 VLA（除非其训练基础设施本身是论文主题）
+    - 纯 NLP 任务微调、纯 prompt 工程
+    - OCR 与文档解析
+
+scoring:
+  # 标题命中 +3，摘要命中 +1
+  keywords:
+    - agentic rl
+    - agentic reinforcement learning
+    - agentic training
+    - post-training
+    - rlvr
+    - verifiable reward
+    - rollout
+    - llm agent training
+    - reinforcement learning infrastructure
+    - sandbox
+    - agent sandbox
+    - execution environment
+    - code execution
+    - microvm
+    - firecracker
+    - container runtime
+    - gvisor
+    - kata container
+    - code agent
+    - coding agent
+    - terminal agent
+    - swe agent
+    - software engineering agent
+    - computer use
+    - gui agent
+    - web agent
+    - environment synthesis
+    - task synthesis
+    - swe-bench
+    - terminal-bench
+    - training infrastructure
+    - rl training system
+    - inference serving
+    - kv cache
+    - gpu scheduling
+    - preemption
+    - agent trajectory
+    - terminal environment
+    - executable environment
+    - environment construction
+    - training environment
+    - environment scaling
+    - tool use
+    - multi-turn agent
+    - long-horizon agent
+  # 命中即丢弃
+  negative_keywords:
+    - medical imaging
+    - mri
+    - ct scan
+    - pathology
+    - diagnosis
+    - protein
+    - drug discovery
+    - molecular
+    - genomics
+    - audio generation
+    - music generation
+    - speech synthesis
+    - text-to-speech
+    - speech recognition
+    - voice cloning
+    - weather forecast
+    - climate
+    - trading
+    - financial forecasting
+    - recommendation system
+    - text-to-sql
+    - ocr
+    - document parsing
+  # 命中 1 个 +1，≥2 个 +2
+  domain_boost_keywords:
+    - scheduling
+    - placement
+    - oversubscription
+    - overcommit
+    - density
+    - isolation
+    - virtualization
+    - snapshot
+    - checkpoint
+    - cold start
+    - image distribution
+    - erofs
+    - overlayfs
+    - lazy loading
+    - distributed system
+    - cluster
+    - throughput
+    - latency
+    - trajectory
+    - reward hacking
+    - off-policy
+    - long-horizon
+
+limits:
+  paper_min_score: 2
+  post_min_score: 2      # = feed weight + 关键词分；weight≥2 的源自动入围
+  paper_max_age_months: 3  # HF trending 会翻出老论文，超过这个月龄的丢弃
+  candidates_papers: 40   # 交给 LLM 精排的候选上限
+  candidates_posts: 15
+  pick_papers: 10         # LLM 最终入选
+  pick_posts: 5

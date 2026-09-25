@@ -1,0 +1,24 @@
+name: 📖 精读一篇论文 / 博文
+description: 提交后由下次本地运行（run-local.sh queue / all）精读，生成笔记并更新知识库
+title: "[read] "
+labels: ["to-read"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: 链接
+      description: arXiv ID（如 2609.23377）或文章 URL
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: 类型
+      options: [paper, post]
+    validations:
+      required: true
+  - type: textarea
+    id: focus
+    attributes:
+      label: 重点关注（可选）
+      description: 想让精读特别关注的问题，比如“他们的沙箱冷启动怎么做的”
