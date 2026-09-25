@@ -95,10 +95,13 @@ case "${1:-}" in
 
   daily)
     day=${2:-$TODAY}
-    if [ -z "${NO_PR:-}" ] && gh pr list --state all --head "daily/$day" --json number --jq '.[].number' | grep -q .; then
-      echo "daily/$day already has a PR; skipping"; exit 0
-    fi
-    start_branch "daily/$day"
+    # A 2nd run on the same day becomes edition "-2" (only items new since the 1st).
+    edition=""; n=1
+    while [ -z "${NO_PR:-}" ] && gh pr list --state all --head "daily/$day$edition" --json number --jq '.[].number' | grep -q .; do
+      n=$((n + 1)); edition="-$n"
+    done
+    name="$day$edition"
+    start_branch "daily/$name"
     : > .cache/extra_seen.txt
     git fetch -q origin '+refs/heads/daily/*:refs/remotes/origin/daily/*' 2>/dev/null || true
     for b in $(git branch -r --list 'origin/daily/*'); do
@@ -109,12 +112,12 @@ case "${1:-}" in
       || echo "triage failed, falling back to keyword ranking"
     python3 -m json.tool .cache/triage.json >/dev/null 2>&1 || rm -f .cache/triage.json
     rm -f .cache/render.out
-    GITHUB_OUTPUT=.cache/render.out uv run python -m pipeline.daily render
+    GITHUB_OUTPUT=.cache/render.out uv run python -m pipeline.daily render --edition "$edition"
     if ! grep -q '^count=[1-9]' .cache/render.out; then
       # Nothing worth pushing today; still record dedup state.
-      finish_pr "daily/$day" "state: $day" daily state >/dev/null || true; exit 0
+      finish_pr "daily/$name" "state: $name" daily state >/dev/null || true; exit 0
     fi
-    url=$(finish_pr "daily/$day" "$(cat .cache/pr_title.txt)" daily inbox state | tail -1) || exit 0
+    url=$(finish_pr "daily/$name" "$(cat .cache/pr_title.txt)" daily inbox state | tail -1) || exit 0
     grep -E '^(> |- \[ \])' .cache/pr_body.md | sed -E 's/<!--.*-->//; s/^- \[ \] /• /; s/\*\*//g' | head -16 > .cache/notify.txt
     echo "$url"
     notify "📚 $(cat .cache/pr_title.txt)" "$url"

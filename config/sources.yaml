@@ -1,9 +1,12 @@
-# 订阅源。新增源：开一个 "add-source" issue，或直接改这里提 PR。
+# 订阅源。新增源：改这里提 PR，或开一个 "add-source" issue。
 # type:
 #   rss        —— RSS/Atom，按发布时间窗口过滤
-#   html_links —— 没有 RSS 的站点：抓列表页，用正则提取文章链接，按“首次见到”判新
-# weight：加到关键词得分上。高信噪比的源（个人技术博客、实验室 blog）给高 weight，
-#          保证即使关键词命中少也能进入 LLM 精排候选。
+#   sitemap    —— 站点地图：按 pattern 正则挑文章 URL，用 <lastmod> 当日期（适合无 RSS 的 JS 站点）
+#   html_links —— 抓列表页、正则提链接，按“首次见到”判新
+#   hf_models  —— HuggingFace 组织的新模型发布（Kimi/Qwen/混元这类官网是纯 JS 的实验室）
+# weight：加到关键词得分上；post_min_score=2，所以 weight≥2 的源每篇都进 LLM 精排候选，
+#         weight 0/1 的（大厂综合博客）要靠关键词命中才能入围，避免营销稿刷屏。
+# title_filter：可选，标题正则白名单，用于噪音大的公司博客。
 
 papers:
   arxiv:
@@ -14,40 +17,92 @@ papers:
     trending: true
 
 posts:
-  window_days: 2   # RSS 只看最近 N 天发布的
+  window_days: 2   # 只看最近 N 天发布/更新的
   feeds:
-    # —— AI lab / 公司 ——
-    - {name: OpenAI News, type: rss, url: "https://openai.com/news/rss.xml", weight: 1}
+    # ───────── Anthropic ─────────
+    - {name: Anthropic Engineering, type: sitemap, url: "https://www.anthropic.com/sitemap.xml", pattern: '^https://www\.anthropic\.com/engineering/[a-z0-9-]+$', weight: 4}
+    - {name: Anthropic Research, type: sitemap, url: "https://www.anthropic.com/sitemap.xml", pattern: '^https://www\.anthropic\.com/research/[a-z0-9-]+$', weight: 3}
+    - {name: Anthropic News, type: sitemap, url: "https://www.anthropic.com/sitemap.xml", pattern: '^https://www\.anthropic\.com/news/[a-z0-9-]+$', weight: 1}
+    - {name: Transformer Circuits, type: rss, url: "https://transformer-circuits.pub/feed.xml", weight: 2}
+
+    # ───────── OpenAI ─────────
+    - {name: OpenAI Research, type: sitemap, url: "https://openai.com/sitemap.xml/research/", pattern: '^https://openai\.com/index/[a-z0-9-]+/$', weight: 3}
+    - {name: OpenAI Engineering, type: sitemap, url: "https://openai.com/sitemap.xml/engineering/", pattern: '^https://openai\.com/index/[a-z0-9-]+/$', weight: 4}
+    - {name: OpenAI Publications, type: sitemap, url: "https://openai.com/sitemap.xml/publication/", pattern: '^https://openai\.com/index/[a-z0-9-]+/$', weight: 3}
+    - {name: OpenAI News, type: rss, url: "https://openai.com/news/rss.xml", weight: 0}
+
+    # ───────── Google ─────────
     - {name: Google DeepMind, type: rss, url: "https://deepmind.google/blog/rss.xml", weight: 1}
-    - {name: Google Research, type: rss, url: "https://research.google/blog/rss/", weight: 0}
-    - {name: Hugging Face Blog, type: rss, url: "https://huggingface.co/blog/feed.xml", weight: 1}
+    - {name: Google Research, type: rss, url: "https://research.google/blog/rss/", weight: 1}
+
+    # ───────── AWS / Amazon ─────────
+    - {name: AWS Compute Blog, type: rss, url: "https://aws.amazon.com/blogs/compute/feed/", weight: 1}        # Lambda / Firecracker
+    - {name: AWS Containers Blog, type: rss, url: "https://aws.amazon.com/blogs/containers/feed/", weight: 1}
+    - {name: AWS Machine Learning Blog, type: rss, url: "https://aws.amazon.com/blogs/machine-learning/feed/", weight: 0}
+    - {name: AWS Architecture Blog, type: rss, url: "https://aws.amazon.com/blogs/architecture/feed/", weight: 0}
+    - {name: Amazon Science, type: rss, url: "https://www.amazon.science/index.rss", weight: 1}
+    - {name: All Things Distributed (Werner Vogels), type: rss, url: "https://www.allthingsdistributed.com/atom.xml", weight: 2}
+
+    # ───────── Meta ─────────
+    - name: Meta AI Blog
+      type: html_links
+      url: "https://ai.meta.com/blog/"
+      pattern: 'href="(https://ai\.meta\.com/blog/[a-z0-9-]+/)"'
+      weight: 1
+    - {name: Meta Engineering, type: rss, url: "https://engineering.fb.com/feed/", weight: 1}
+
+    # ───────── DeepSeek ─────────
+    - {name: DeepSeek News, type: sitemap, url: "https://www.deepseek.com/sitemap.xml", pattern: '^https://www\.deepseek\.com/en/news/[a-z0-9-]+/?$', weight: 4}
+    - {name: DeepSeek, type: hf_models, org: deepseek-ai, weight: 4}
+
+    # ───────── Kimi / Moonshot ─────────
+    - {name: Kimi (Moonshot), type: hf_models, org: moonshotai, weight: 4}
+
+    # ───────── Alibaba / Qwen ─────────
+    - {name: Qwen, type: hf_models, org: Qwen, weight: 3}
+    - name: Alibaba Cloud Blog
+      type: html_links
+      url: "https://www.alibabacloud.com/blog"
+      pattern: 'href="(https://www\.alibabacloud\.com/blog/[a-z0-9-]+_[0-9]+)"'
+      title_filter: 'qwen|model|agent|infer|training|gpu|serverless|sandbox|container|kubernetes|pai'
+      weight: 1
+
+    # ───────── Tencent / 混元 ─────────
+    - {name: Tencent Hunyuan, type: hf_models, org: tencent, title_filter: '^(hy|hunyuan)', weight: 3}
+
+    # ───────── 其它实验室 / 训练与推理系统 ─────────
     - {name: Thinking Machines, type: rss, url: "https://thinkingmachines.ai/blog/index.xml", weight: 3}
-    - {name: Meta Engineering, type: rss, url: "https://engineering.fb.com/feed/", weight: 0}
-    - {name: GitHub Blog, type: rss, url: "https://github.blog/feed/", weight: 0}
-    - name: Anthropic Engineering
-      type: html_links
-      url: "https://www.anthropic.com/engineering"
-      pattern: 'href="(/engineering/[a-z0-9-]+)"'
-      base: "https://www.anthropic.com"
-      weight: 4
-    - name: Anthropic Research
-      type: html_links
-      url: "https://www.anthropic.com/research"
-      pattern: 'href="(/research/[a-z0-9-]+)"'
-      base: "https://www.anthropic.com"
-      weight: 2
-    # —— 训练 / 推理系统 ——
+    - {name: Hugging Face Blog, type: rss, url: "https://huggingface.co/blog/feed.xml", weight: 1}
     - {name: vLLM Blog, type: rss, url: "https://vllm.ai/blog/rss.xml", weight: 2}
     - {name: PyTorch Blog, type: rss, url: "https://pytorch.org/blog/feed/", weight: 1}
+    - {name: Together AI Blog, type: rss, url: "https://www.together.ai/blog/rss.xml", weight: 1}
     - {name: SemiAnalysis, type: rss, url: "https://newsletter.semianalysis.com/feed", weight: 1}
-    # —— 沙箱 / 云原生 infra ——
+    - {name: GitHub Blog, type: rss, url: "https://github.blog/feed/", weight: 0}
+
+    # ───────── 沙箱 / 云原生 infra ─────────
     - {name: Cloudflare Blog, type: rss, url: "https://blog.cloudflare.com/rss/", weight: 0}
     - {name: Fly.io Blog, type: rss, url: "https://fly.io/blog/feed.xml", weight: 1}
     - {name: Kubernetes Blog, type: rss, url: "https://kubernetes.io/feed.xml", weight: 0}
-    # —— 个人高信噪比博客 ——
+
+    # ───────── 业内大牛个人博客 ─────────
+    - {name: Andrej Karpathy (bearblog), type: rss, url: "https://karpathy.bearblog.dev/feed/", weight: 4}
+    - {name: Andrej Karpathy, type: rss, url: "https://karpathy.github.io/feed.xml", weight: 4}
     - {name: Lilian Weng, type: rss, url: "https://lilianweng.github.io/index.xml", weight: 4}
     - {name: Chip Huyen, type: rss, url: "https://huyenchip.com/feed.xml", weight: 3}
-    - {name: Sebastian Raschka, type: rss, url: "https://magazine.sebastianraschka.com/feed", weight: 2}
-    - {name: Interconnects (Nathan Lambert), type: rss, url: "https://www.interconnects.ai/feed", weight: 3}
+    - {name: Jason Wei, type: rss, url: "https://www.jasonwei.net/blog?format=rss", weight: 3}
+    - {name: Horace He (Thonk From First Principles), type: rss, url: "https://www.thonking.ai/feed", weight: 3}
+    - {name: Tim Dettmers, type: rss, url: "https://timdettmers.com/feed/", weight: 3}
+    - {name: Nathan Lambert (Interconnects), type: rss, url: "https://www.interconnects.ai/feed", weight: 3}
+    - {name: Finbarr Timbers (Artificial Fintelligence), type: rss, url: "https://www.artfintel.com/feed", weight: 3}
+    - {name: Brendan Gregg, type: rss, url: "https://www.brendangregg.com/blog/rss.xml", weight: 3}   # 系统性能
+    - {name: Sebastian Raschka (Ahead of AI), type: rss, url: "https://magazine.sebastianraschka.com/feed", weight: 2}
+    - {name: 苏剑林（科学空间）, type: rss, url: "https://kexue.fm/feed", weight: 2}
+    - {name: Eugene Yan, type: rss, url: "https://eugeneyan.com/rss/", weight: 2}
+    - {name: Hamel Husain, type: rss, url: "https://hamel.dev/index.xml", weight: 2}
+    - {name: Jay Alammar (Language Models & Co.), type: rss, url: "https://newsletter.languagemodels.co/feed", weight: 2}
+    - {name: Jack Clark (Import AI), type: rss, url: "https://importai.substack.com/feed", weight: 1}
+    - {name: Philipp Schmid, type: rss, url: "https://www.philschmid.de/rss", weight: 1}
+    - {name: Answer.AI (Jeremy Howard), type: rss, url: "https://www.answer.ai/index.xml", weight: 1}
     - {name: Latent Space, type: rss, url: "https://www.latent.space/feed", weight: 1}
+    - {name: Dwarkesh Patel, type: rss, url: "https://www.dwarkesh.com/feed", weight: 1}
     - {name: Simon Willison, type: rss, url: "https://simonwillison.net/atom/everything/", weight: 0}

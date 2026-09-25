@@ -129,6 +129,6 @@ limits:
   post_min_score: 2      # = feed weight + 关键词分；weight≥2 的源自动入围
   paper_max_age_months: 3  # HF trending 会翻出老论文，超过这个月龄的丢弃
   candidates_papers: 40   # 交给 LLM 精排的候选上限
-  candidates_posts: 15
+  candidates_posts: 25
   pick_papers: 10         # LLM 最终入选
-  pick_posts: 5
+  pick_posts: 6
