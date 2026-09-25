@@ -9,7 +9,7 @@
 | 研究方向、关键词、每天推多少 | `config/interests.yaml` |
 | 订阅哪些论文源 / 博客 | `config/sources.yaml` |
 | 推送到飞书 / Slack / Telegram | `config/notify.yaml` + `.env.local` |
-| 每天几点跑 | Claude 桌面 App 定时任务 `tech-tree-daily` |
+| 每天几点跑 | Claude 桌面 App 定时任务 `tech-tree-daily` / `tech-tree-hourly` |
 | 笔记格式、写作规则、目录约定 | `CLAUDE.md` |
 | 精读 / 调研 / 周报的具体要求 | `.claude/skills/<名称>/SKILL.md` |
 
@@ -190,24 +190,27 @@ uv run python -m pipeline.notify --title "tech-tree 测试" --text "hello"
 
 ## 4. 定时任务
 
-定时任务在 Claude 桌面 App 左侧栏「Scheduled」→ **tech-tree 每日论文与博文流水线（18:00）**：
+Claude 桌面 App 左侧栏「Scheduled」里有两个任务：
 
-- **改时间**：在任务里编辑时间，或在 Claude 会话里说「把 tech-tree-daily 改到每天早上 8 点」。
-- **立即跑一次**：点「Run now」。
+| 任务 | 时间 | 执行 | 作用 |
+|---|---|---|---|
+| `tech-tree-daily` | 每天 08:00 | `scripts/run-local.sh bg all` | sync → queue → daily（出当天推送 PR），周日再加周报 |
+| `tech-tree-hourly` | 每小时 :30 | `scripts/run-local.sh bg tick` | sync → queue：处理勾选项和待办 issue；没有待办几秒就结束 |
+
+- **定时任务只是启动器**：用 `bg` 在后台启动脚本后，会话立刻结束。所以会话显示「完成」不代表流水线跑完了。进度看 `.cache/logs/`，结果看 GitHub / 飞书。
+- **不会撞车**：同一时间只允许一个流水线运行（`.cache/lock` 记录进程号），后到的会自动跳过。hourly 放在 :30，就是为了避开 08:00。
+- **改时间**：在任务里编辑，或在 Claude 会话里说「把 tech-tree-daily 改到每天 7 点」。
+- **立即跑一次**：点「Run now」。注意对 daily 点会多生成一个 `-2` 版推送；只想处理待办，就对 hourly 点。
 - **暂停**：关掉任务开关。
-- **任务内容**：
-  1. 拉取 master；
-  2. 运行 `scripts/run-local.sh all`；
-  3. 周日追加 `report`；
-  4. 汇总链接。
-
-  任务定义在 `~/.claude/scheduled-tasks/tech-tree-daily/SKILL.md`。任务**不会**合并 PR、改代码或删分支。
+- **任务定义**：`~/.claude/scheduled-tasks/<任务名>/SKILL.md`。任务**不会**合并 PR、改代码或删分支。
 - **前提**：到点时桌面 App 需要开着；App 关着时错过的任务会在下次打开时补跑。第一次运行时批准的命令权限会保存下来，之后自动沿用。
+- **开销**：hourly 每次会启动一个很短的 Claude 会话（只执行一条命令）。只有真正精读、调研时才会消耗较多额度。
 
-不想依赖桌面 App 的话，也可以用系统 cron 或 launchd 直接调用脚本（同样只用本机的 `claude` 登录态）：
+不想依赖桌面 App 的话，也可以用系统 crontab 直接调用脚本（同样只用本机的 `claude` 登录态，没有会话开销）：
 
 ```bash
-0 18 * * * cd ~/workspace/tech-tree && git pull -q --ff-only && scripts/run-local.sh all >> ~/tech-tree.log 2>&1
+0 8 * * *  cd ~/workspace/tech-tree && scripts/run-local.sh all
+30 * * * * cd ~/workspace/tech-tree && scripts/run-local.sh tick
 ```
 
 ## 5. Agent 与模型
@@ -242,7 +245,7 @@ scripts/setup-github.sh        # 标签 + Pages（仓库已配置过则可跳过
 cp /path/to/old/.env.local .   # 推送凭据（可选）
 ```
 
-最后在 Claude 桌面 App 里重新创建定时任务：让 Claude「每天 18:00 在 ~/workspace/tech-tree 运行 scripts/run-local.sh all」。
+最后在 Claude 桌面 App 里重新创建两个定时任务：让 Claude「每天 08:00 在 ~/workspace/tech-tree 运行 scripts/run-local.sh bg all」和「每小时 :30 运行 scripts/run-local.sh bg tick」。
 
 ## 8. 重置与维护
 

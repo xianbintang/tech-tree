@@ -88,6 +88,7 @@ uv run python -m pipeline.daily fetch     # 抓取候选 → .cache/candidates.j
 uv run python -m pipeline.daily render    # 渲染 inbox + PR 描述
 uv run python -m pipeline.wiki_lint       # 知识库体检
 uv run python -m pipeline.week_context    # 本周上下文 → .cache/week.json
-scripts/run-local.sh all                  # sync → queue → daily（定时任务跑这条）
+scripts/run-local.sh all                  # sync → queue → daily（每天 08:00 定时）
+scripts/run-local.sh tick                 # sync → queue（每小时 :30 定时）
 scripts/run-local.sh read <id>|topic <issue>|report|lint
 ```

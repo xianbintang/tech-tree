@@ -3,7 +3,9 @@
 # subscription does the AI work; GitHub is only used as the issue/PR ledger via `gh`.
 # No LLM credentials ever leave this machine.
 #
-#   scripts/run-local.sh all                 # sync → queue → daily（定时任务就跑这一条）
+#   scripts/run-local.sh all                 # sync → queue → daily（周日再加 report）；每天 08:00 定时
+#   scripts/run-local.sh tick                # sync → queue：有待办才干活；每小时 :30 定时
+#   scripts/run-local.sh bg <命令…>          # 后台运行（定时任务用），日志在 .cache/logs/
 #   scripts/run-local.sh daily [YYYY-MM-DD]  # 抓取 + 精排 → daily/<date> PR
 #   scripts/run-local.sh sync                # 已合并 PR 里勾选的条目 → to-read issue
 #   scripts/run-local.sh queue               # 处理待办：open 的 to-read / research-topic issue
@@ -28,6 +30,38 @@ TODAY=$(TZ=Asia/Shanghai date +%F)
 TOOLS="Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Bash(uv run python -m pipeline.*),Bash(ls:*),Bash(gh issue view:*)"
 TRAILER="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ORIG_BRANCH=$(git branch --show-current)
+mkdir -p .cache/logs
+
+# Detach and return immediately (for scheduled tasks, whose session may end first).
+if [ "${1:-}" = bg ]; then
+  shift
+  nohup "$0" "$@" >/dev/null 2>&1 &
+  echo "started \`$*\` in background (pid $!); logs: $(pwd)/.cache/logs/"
+  exit 0
+fi
+
+# Every top-level run keeps a log; nested calls ("$0" read …) append to the same one.
+if [ -z "${TT_LOG:-}" ] && [ -n "${1:-}" ]; then
+  export TT_LOG=".cache/logs/$(date +%F_%H%M%S)-$1.log"
+  exec > >(tee -a "$TT_LOG") 2>&1
+  find .cache/logs -name '*.log' -mtime +30 -delete 2>/dev/null || true
+fi
+
+# One pipeline run at a time. Stale locks (dead pid, or pid-less and >3h old) are cleared.
+acquire_lock() {
+  if ! mkdir .cache/lock 2>/dev/null; then
+    local pid; pid=$(cat .cache/lock/pid 2>/dev/null || true)
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      echo "another run in progress (pid $pid); skipping"; exit 0
+    fi
+    if [ -z "$pid" ] && [ -n "$(find .cache/lock -maxdepth 0 -mmin -180)" ]; then
+      echo "another run in progress (.cache/lock); skipping"; exit 0
+    fi
+    echo "clearing stale lock"; rm -rf .cache/lock; mkdir .cache/lock
+  fi
+  echo $$ > .cache/lock/pid
+  trap 'rm -rf .cache/lock' EXIT
+}
 
 agent() {
   case "$AGENT" in
@@ -75,10 +109,10 @@ load_issue() { gh issue view "$1" --json number,title,body,labels > .cache/issue
 # Mark an issue in-progress; on failure, undo the mark and leave a comment so queue retries it.
 claim() {  # $1 issue  $2 label
   CLAIMED_ISSUE=$1 CLAIMED_LABEL=$2
-  gh issue edit "$1" --add-label "$2" >/dev/null
   trap 'gh issue edit "$CLAIMED_ISSUE" --remove-label "$CLAIMED_LABEL" >/dev/null 2>&1 || true;
         gh issue comment "$CLAIMED_ISSUE" --body "❌ 本地运行失败（$(hostname -s)，$(date "+%F %T")），下次 queue 会重试。" >/dev/null 2>&1 || true;
         back 2>/dev/null || true' ERR
+  gh issue edit "$1" --add-label "$2" >/dev/null
 }
 release() { trap - ERR; }
 
@@ -88,12 +122,17 @@ rm -f .cache/pr_body.md .cache/notify.txt .cache/triage.json
 
 case "${1:-}" in
   all)
-    # One run at a time (scheduled task + manual run could overlap).
-    mkdir .cache/lock 2>/dev/null || { echo "another run in progress (.cache/lock)"; exit 0; }
-    trap 'rmdir .cache/lock' EXIT
+    acquire_lock
     "$0" sync  || echo "::sync failed"
     "$0" queue || echo "::queue failed"
     "$0" daily || echo "::daily failed"
+    if [ "$(TZ=Asia/Shanghai date +%u)" = 7 ]; then "$0" report || echo "::report failed"; fi
+    ;;
+
+  tick)
+    acquire_lock
+    "$0" sync  || echo "::sync failed"
+    "$0" queue || echo "::queue failed"
     ;;
 
   daily)
@@ -202,5 +241,5 @@ case "${1:-}" in
     ;;
 
   *)
-    sed -n '2,19p' "$0"; exit 1 ;;
+    sed -n '2,20p' "$0"; exit 1 ;;
 esac

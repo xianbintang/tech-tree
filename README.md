@@ -36,11 +36,11 @@ GitHub 只是 issue / PR 账本（本地 `gh` 操作），每一步都有 PR 或
 
 | 想做的事 | 操作 |
 |---|---|
-| 每天自动跑 | 桌面 App 定时任务 `tech-tree-daily` 每天 18:00 执行 `scripts/run-local.sh all`（sync → queue → daily，周日加周报） |
-| 看今天推送 | 打开 `daily` PR，勾选想读的条目，合并；下次运行自动精读 |
+| 每天自动跑 | 桌面 App 定时任务：每天 08:00 `all`（出当天推送 PR，周日加周报）；每小时 :30 `tick`（有勾选 / 待办就精读、调研） |
+| 看今天推送 | 打开 `daily` PR，勾选想读的条目，合并；一小时内自动精读并提 `read` PR |
 | 精读指定论文 | 开「📖 精读」issue 排队，或立即 `scripts/run-local.sh read 2609.23377` |
 | 调研一个主题 | 开「🔎 调研」issue 排队，或立即 `scripts/run-local.sh topic <issue>` |
-| 周报 | `scripts/run-local.sh report`（可设每周定时） |
+| 周报 | 每周日 08:00 自动生成；手动：`scripts/run-local.sh report` |
 | 问知识库问题 | 在本仓库里开 `claude`，直接问（CLAUDE.md 规定先查 wiki 再上网） |
 | 加订阅源 / 调兴趣 | 改 `config/sources.yaml` / `config/interests.yaml` |
 

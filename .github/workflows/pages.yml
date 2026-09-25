@@ -4,7 +4,7 @@ name: pages
 on:
   push:
     branches: [master]
-    paths: ["docs/**", "inbox/**", "notes/**", "wiki/**", "reports/**", "sources/**", "mkdocs.yml", "scripts/build_site.sh"]
+    paths: ["docs/**", "inbox/**", "notes/**", "wiki/**", "reports/**", "sources/**", "mkdocs.yml", "scripts/build_site.sh", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
