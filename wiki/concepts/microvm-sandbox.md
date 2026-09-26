@@ -1,9 +1,9 @@
 ---
 title: "MicroVM 沙箱"
-aliases: [microVM, 轻量虚拟机, micro virtual machine]
+aliases: [microVM, 轻量虚拟机, micro virtual machine, microVM isolation, 轻量虚拟机隔离, Firecracker microVM]
 created: 2026-09-26
 updated: 2026-09-26
-sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2023-huang-pvm, 2020-anjali-firecracker-gvisor, 2017-manco-lightvm, 2005-bellard-qemu]
+sources: [2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2023-huang-pvm, 2020-anjali-firecracker-gvisor, 2017-manco-lightvm, 2005-bellard-qemu]
 ---
 
 # MicroVM 沙箱
@@ -18,6 +18,9 @@ sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2
 
 ## 核心机制 / 主要变体
 
+- **DSec 的四后端谱系（Table 1）**：FnCall（无状态短任务，隔离最弱、性能最好）< 容器（SWE/工具调用主力，快启动高密度但共享内核）< microVM（安全敏感/强隔离，Linux 兼容，内存开销更高、启动更慢）< full VM/QEMU（完整 COTS OS，如 Android VM、GUI/图形渲染，开销最大）[[2609.22978]]。
+- **DSec 的生产部署方式**：FnCall 和容器并不直接跑在裸机上，而是先跑在 QEMU/libvirt VM 里、再在里面跑容器/FnCall——多一层安全边界，把"容器"和"microVM/fullVM"两条隔离路线在物理机层面统一起来 [[2609.22978]]。
+- **microVM 专属存储路径**：Firecracker 不支持 virtio-fs，DSec 用 OverlayBD（块级、经 ublk 用户态框架挂载）而非容器路线的 EROFS/overlayfs 组合来做 microVM 的可写盘和按需加载，说明 microVM 后端在文件系统兼容性上比容器更受限（细节见 [[sandbox-image-distribution]]）[[2609.22978]]。
 - **容器 vs 虚拟化的根本取舍**：容器共享宿主内核，靠 cgroups/namespaces/seccomp-bpf 隔离，安全边界依赖 syscall 面收窄（与兼容性直接冲突）；虚拟化把安全边界移到硬件辅助的 VMM 层，guest 内核可以有完整功能而不改变威胁模型，但传统 VMM（QEMU）复杂度高、启动慢、内存开销大 [[2020-agache-firecracker]]。
 - **MicroVM 的解法**：不是在容器上加固，也不是裁剪 QEMU，而是为专用场景（serverless/容器工作负载）重新实现一个只做"必要子集"的极简 VMM——去掉 BIOS、任意内核启动、PCI、VM 迁移等通用虚拟化功能，只保留 virtio 网络/块设备和最基本的设备模型 [[2020-agache-firecracker]]。
 - **六条选型标准**（源自 Firecracker 论文 §2，可作为评估任意隔离方案的通用框架）：Isolation（安全边界强度）、Overhead and Density（单机可承载密度）、Performance（相对裸机的性能损耗）、Compatibility（对未修改二进制的兼容性）、Fast Switching（创建/回收速度）、Soft Allocation（资源超卖能力）[[2020-agache-firecracker]]。
@@ -32,7 +35,10 @@ sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2
 
 - Firecracker 实现：内存开销约 3MB/VM，端到端冷启动可到 150ms，生产超卖比 10x（详见 [[firecracker]]）[[2020-agache-firecracker]]。
 - 预启动池容量可用 Little's law 反推：池大小 = 创建速率 × 单次创建延迟（Firecracker 案例：150ms 创建延迟对应约每 8 次/秒创建配 1 个预启动 MicroVM）[[2020-agache-firecracker]]。
-- 存储集成是 microVM 路线的一个共性工程难点：不支持 virtio-fs 时需要块设备层面的按需加载方案（如 DSec 的 OverlayBD + ublk + 3FS 组合，转引自 DSec §3.3）[[2020-agache-firecracker]]。
+- 存储集成是 microVM 路线的一个共性工程难点：不支持 virtio-fs 时需要块设备层面的按需加载方案（如 DSec 的 OverlayBD + ublk + 3FS 组合，DSec §3.3）[[2609.22978]]。
+- DSec 生产单机密度：稳定运行观测到最高 3,200 容器 / 800 microVM 同节点并发，作者标注为"demonstrated operating points"而非硬上限；一天采样的单机峰值 1,048 容器 vs. 524 microVM 同时在线 [[2609.22978]]。
+- DSec 沙箱生存期中位数：容器 17.4 分钟 vs. microVM 15.5 分钟，p99 均超 3 小时——两种后端长尾生命周期相近，与 Lambda 式短函数假设明显不同 [[2609.22978]]。
+- microVM 高密度下比容器更吃内存的两个来源：(1) 镜像数据经虚拟块设备读取，host 和 guest 各缓存一份；(2) guest 空闲页若无显式上报不会还给 host。解决机制见 [[sandbox-density-overcommit]] [[2609.22978]]。
 - [[rund]] 的密度/并发数字：单节点部署 2,500+ 个 128MB 规格安全容器，200 容器/秒并发启动，相比 Kata-qemu/Kata-template/Kata-FC 在 1,000 容器密度下每容器内存开销低 87.7%/82.4%/75.1%（阿里生产验证，日均近 40 亿次调用）[[2022-li-rund]]。
 - 高频创建/回收资源绕过内核全局锁的通用模式：cgroup 池化 + rename 替代创建，使 cgroup 创建耗时减少 94%（不限于 microVM 场景，任何受内核锁串行化的资源池都可参考）[[2022-li-rund]]。
 
@@ -45,14 +51,16 @@ sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2
 - 容器级密度/超卖数字（本页 10x-20x 及 RunD 的 2,500+/节点）来自 Lambda/阿里 serverless 场景（小内存函数、短生命周期），是否适用于 agent 训练场景的沙箱（可能资源占用模式差异很大，尤其是有状态、长生命周期的假设不成立），尚待更贴近训练场景的论文验证。
 - microVM 与 [[nested-virtualization|嵌套虚拟化]]（[[pvm]]）在同等密度目标下的性能差距：PVM 论文只报告了自己相对硬件辅助嵌套虚拟化的提升（World switch 成本降低约 7x，高并发下最多两个数量级），没有与 microVM/Kata 路线做同一评测环境下的直接对比，这个跨路线的量化差距仍是开放问题。microVM（Firecracker）与 [[gvisor]] 之间已有独立第三方对比 [[2020-anjali-firecracker-gvisor]]：两者各有短板（Firecracker 网络延迟差但吞吐/内存/CPU 接近原生，gVisor 网络带宽差但延迟略优于 Firecracker），没有一个在所有维度全面占优，具体选型需按工作负载类型（网络密集 vs 文件/内存密集）判断。
 - RunD 的 cgroup 全局锁瓶颈发现基于 Linux 4.19.91（cgroup v1 语义），在 cgroup v2 下是否依然成立尚未验证。
+- DSec 没有解释 3,200 容器 / 800 microVM 两个密度上限背后的限制因素（内存？调度开销？网络？），也没有给出继续往上推的实验数据 [[2609.22978]]。
 - 我们自己的沙箱平台是否存在"需要在无 host 权限的租用 VM 里提供强隔离"的实际场景，若存在，[[pvm]] 是目前记录到的唯一候选方案，但尚未找到其开源实现。
 
 ## 相关概念
 
-[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]
+[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]、[[sandbox-image-distribution]]、[[sandbox-density-overcommit]]、[[agentic-rollout-preemption]]
 
 ## 相关来源
 
+- [[2609.22978]] — DSec（母论文）：生产级多后端沙箱平台，给出 microVM vs. 容器 vs. full VM 的取舍与生产密度、生存期数字
 - [[2005-bellard-qemu]] — QEMU 原始设计论文，是本页"通用虚拟机"一端的技术源头，也是母论文 DSec 第四种沙箱后端（full-VM，用于 Android VM/GUI 场景）的直接引用出处，详见 [[qemu]]
 - [[2017-manco-lightvm]] — 更早（2017）、路线不同（Xen + unikernel/控制面重写）的"VM 隔离与容器级性能不互斥"经典论证,是本页整条谱系的前身参照
 - [[2020-agache-firecracker]] — 提出 microVM 六条选型标准与极简 VMM 设计范式的锚点论文
