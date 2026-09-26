@@ -1,0 +1,111 @@
+# DSec 引用链精读清单。
+#   uv run python -m pipeline.reading_list create config/reading-lists/dsec-refs.yaml
+# 每个 category 建一个 tracking issue；给 issue 打上 `to-read` 标签，本地 queue 就会按分类批量精读、出一个 PR。
+#
+# 条目字段：type（paper | post）、id（arXiv ID；非 arXiv 用 <year>-<first-author>-<slug>；文档/博客用 slug）、
+#           title、url（论文落地页 / PDF / DOI 均可，fetch_paper 会自己找 PDF）、why（为什么读）。
+
+name: dsec-refs
+parent:
+  id: "2609.22978"
+  title: "DeepSeek Elastic Compute (DSec): A Sandbox Infrastructure for Effective Agentic Training at Scale"
+  url: https://arxiv.org/abs/2609.22978
+labels: [reading-list, dsec-refs]
+
+categories:
+  - key: A
+    title: "DSec 锚点"
+    description: |
+      先读 DSec 本身，后续所有笔记都回链 [[2609.22978]]。
+      未纳入精读的引用（与沙箱基础设施无关）：GPT-4、InstructGPT、Concrete Problems in AI Safety、
+      Defining and Characterizing Reward Hacking、SWE-bench、OSWorld、WebArena、OCI Image Spec、Moby、
+      DXVK、OpenCode、DeepSeek-V3.2 / R1 / LLM、REINFORCE++、Shi et al. 2026、virtio-pmem 文档（并入 DSec 笔记）。
+    items:
+      - {type: paper, id: "2609.22978", title: "DeepSeek Elastic Compute (DSec): A Sandbox Infrastructure for Effective Agentic Training at Scale", url: "https://arxiv.org/abs/2609.22978", why: "锚点：FnCall/容器/microVM/fullVM 统一平台，日均 300 万沙箱、峰值 38 万并发"}
+
+  - key: B
+    title: "隔离运行时 / microVM"
+    description: "DSec §2.2 四种底座与 §9 Lightweight isolation 的源头：microVM、VM 容器、安全容器、嵌套虚拟化。"
+    items:
+      - {type: paper, id: "2020-agache-firecracker", title: "Firecracker: Lightweight Virtualization for Serverless Applications", url: "https://www.usenix.org/conference/nsdi20/presentation/agache", why: "DSec microVM 底座；Lambda 的隔离基础"}
+      - {type: paper, id: "2022-li-rund", title: "RunD: A Lightweight Secure Container Runtime for High-density Deployment and High-concurrency Startup in Serverless Computing", url: "https://www.usenix.org/conference/atc22/presentation/li-zijun-rund", why: "阿里高密度安全容器；§9 点名，最贴近我们的密度/冷启动目标"}
+      - {type: post, id: "kata-containers-architecture", title: "Kata Containers Architecture", url: "https://github.com/kata-containers/kata-containers/blob/main/docs/design/architecture/README.md", why: "§9 点名的 VM-backed 容器路线；RunD 的基线"}
+      - {type: paper, id: "2023-huang-pvm", title: "PVM: Efficient Shadow Paging for Deploying Secure Containers in Cloud-native Environments", url: "https://doi.org/10.1145/3600006.3613158", why: "云上嵌套虚拟化跑安全容器（阿里/蚂蚁）；§9 nested virtualization"}
+      - {type: paper, id: "2020-anjali-firecracker-gvisor", title: "Blending Containers and Virtual Machines: A Study of Firecracker and gVisor", url: "https://doi.org/10.1145/3381052.3381315", why: "P3：Firecracker 与 gVisor 的内核路径/性能对比，补上 gVisor 这一支"}
+      - {type: paper, id: "2017-manco-lightvm", title: "My VM is Lighter (and Safer) than your Container", url: "https://doi.org/10.1145/3132747.3132763", why: "P3：LightVM，轻量 VM 可以比容器更快更密的经典论证"}
+      - {type: paper, id: "2005-bellard-qemu", title: "QEMU, a Fast and Portable Dynamic Translator", url: "https://www.usenix.org/conference/2005-usenix-annual-technical-conference/qemu-fast-and-portable-dynamic-translator", why: "DSec fullVM 底座"}
+
+  - key: C
+    title: "AWS Lambda 专题"
+    description: "Lambda 是 Firecracker 的生产载体：放置调度、镜像按需加载、快照唯一性、SnapStart，以及 2026 年面向 agent 沙箱的 Lambda MicroVMs。"
+    items:
+      - {type: paper, id: "2021-balaji-fireplace", title: "FirePlace: Placing Firecracker Virtual Machines with Hindsight Imitation", url: "https://proceedings.mlsys.org/paper_files/paper/2021/file/294f82c43d69f66c04440cbb2740e52d-Paper.pdf", why: "Lambda 上 Firecracker VM 的放置调度（hindsight imitation）；对应我们的调度/超卖"}
+      - {type: paper, id: "2023-brooker-lambda-container-loading", title: "On-demand Container Loading in AWS Lambda", url: "https://www.usenix.org/system/files/atc23-brooker.pdf", why: "Lambda 大镜像按需加载、去重与分层缓存；对照 DSec §5.3（配套博客 Container Loading in AWS Lambda 一并读）"}
+      - {type: paper, id: "2102.12892", title: "Restoring Uniqueness in MicroVM Snapshots", url: "https://arxiv.org/abs/2102.12892", why: "microVM 快照恢复后的随机数/身份唯一性问题；做快照/暂停恢复必须知道"}
+      - {type: post, id: "brooker-lambda-snapstart", title: "Lambda Snapstart, and snapshots as a tool for system builders", url: "https://brooker.co.za/blog/2022/11/29/snapstart.html", why: "SnapStart 设计思路与快照作为系统构建工具"}
+      - {type: post, id: "brooker-seven-years-of-firecracker", title: "Seven Years of Firecracker", url: "https://brooker.co.za/blog/2025/09/18/firecracker.html", why: "Firecracker 七年演进回顾"}
+      - {type: post, id: "brooker-ten-years-of-lambda", title: "Ten Years of AWS Lambda", url: "https://brooker.co.za/blog/2024/11/14/lambda-ten-years.html", why: "Lambda 架构十年演进"}
+      - {type: post, id: "aws-lambda-microvms-agent-sandboxes", title: "Running self-hosted AI agent sandboxes with AWS Lambda MicroVMs", url: "https://aws.amazon.com/blogs/compute/running-self-hosted-ai-agent-sandboxes-with-aws-lambda-microvms/", why: "2026-09 AWS 直接面向 agent 沙箱的产品形态，与我们正面竞争"}
+
+  - key: D
+    title: "Serverless 冷启动与快照"
+    description: "§9 Serverless computing：冷启动、快照恢复、执行环境共享。"
+    items:
+      - {type: paper, id: "2018-akkus-sand", title: "SAND: Towards High-Performance Serverless Computing", url: "https://www.usenix.org/conference/atc18/presentation/akkus", why: "§9 点名；应用级沙箱共享"}
+      - {type: paper, id: "2101.09355", title: "Benchmarking, Analysis, and Optimization of Serverless Function Snapshots (REAP)", url: "https://arxiv.org/abs/2101.09355", why: "§9 点名；Firecracker 快照工作集预取"}
+      - {type: paper, id: "2020-cadden-seuss", title: "SEUSS: Skip Redundant Paths to Make Serverless Fast", url: "https://doi.org/10.1145/3342195.3392698", why: "§9 点名；unikernel 快照"}
+      - {type: paper, id: "2024-huang-trenv", title: "TrEnv: Transparently Share Serverless Execution Environments Across Different Functions and Nodes", url: "https://doi.org/10.1145/3694715.3695967", why: "§9 点名；跨函数/跨节点共享执行环境"}
+      - {type: paper, id: "2018-oakes-sock", title: "SOCK: Rapid Task Provisioning with Serverless-Optimized Containers", url: "https://www.usenix.org/conference/atc18/presentation/oakes", why: "P3：容器冷启动优化经典"}
+      - {type: paper, id: "2020-du-catalyzer", title: "Catalyzer: Sub-millisecond Startup for Serverless Computing with Initialization-less Booting", url: "https://doi.org/10.1145/3373376.3378512", why: "P3：sandbox fork / 免初始化启动"}
+      - {type: paper, id: "2022-ao-faasnap", title: "FaaSnap: FaaS Made Fast Using Snapshot-based VMs", url: "https://doi.org/10.1145/3492321.3524270", why: "P3：快照恢复的缺页与预取优化"}
+
+  - key: E
+    title: "镜像分发与文件系统"
+    description: "DSec §5.1 可组合镜像层、§5.3 镜像按需加载与 §9 Container image and filesystem formats。"
+    items:
+      - {type: paper, id: "2019-gao-erofs", title: "EROFS: A Compression-friendly Readonly File System for Resource-scarce Devices", url: "http://www.usenix.org/conference/atc19/presentation/gao", why: "DSec 三层 EROFS + overlayfs 的基础（§5.1、§8.3）"}
+      - {type: paper, id: "2020-li-dadi", title: "DADI: Block-Level Image Service for Agile and Elastic Application Deployment", url: "https://www.usenix.org/conference/atc20/presentation/li-huiba", why: "§9 点名；块级按需镜像"}
+      - {type: paper, id: "2021-wang-faasnet", title: "FaaSNet: Scalable and Fast Provisioning of Custom Serverless Container Runtimes at Alibaba Cloud Function Compute", url: "https://www.usenix.org/conference/atc21/presentation/wang-ao", why: "§9 点名；P2P 镜像分发"}
+      - {type: paper, id: "2026-wang-cofs", title: "CoFS: A Filesystem for Fast Container Startup", url: "https://www.usenix.org/conference/fast26/presentation/wang-li", why: "§9 点名；FAST'26 最新容器启动文件系统"}
+      - {type: paper, id: "2016-harter-slacker", title: "Slacker: Fast Distribution with Lazy Docker Containers", url: "https://www.usenix.org/conference/fast16/technical-sessions/presentation/harter", why: "P3：懒加载镜像的奠基工作"}
+      - {type: post, id: "nydus-image-service", title: "Nydus: Dragonfly Container Image Service", url: "https://github.com/dragonflyoss/nydus", why: "§5.3 引用；RAFS 按需加载"}
+      - {type: post, id: "deepseek-3fs-design-notes", title: "3FS (Fire-Flyer File System) Design Notes", url: "https://github.com/deepseek-ai/3FS/blob/main/docs/design_notes.md", why: "DSec 镜像直接从 3FS 服务，不走独立 registry"}
+      - {type: paper, id: "2408.14158", title: "Fire-Flyer AI-HPC: A Cost-Effective Software-Hardware Co-Design for Deep Learning", url: "https://arxiv.org/abs/2408.14158", why: "3FS 与 DeepSeek 集群的出处"}
+
+  - key: F
+    title: "资源超卖与调度"
+    description: "DSec §5.2 高密度资源管理（内存共享/回收、CPU QoS）的理论与机制来源。"
+    items:
+      - {type: paper, id: "2002-waldspurger-esx-memory", title: "Memory Resource Management in VMware ESX Server", url: "https://www.usenix.org/conference/osdi-02/memory-resource-management-vmware-esx-server", why: "内存超卖奠基：ballooning、内容页共享、idle memory tax"}
+      - {type: paper, id: "2019-park-damon", title: "Profiling Dynamic Data Access Patterns with Controlled Overhead and Quality (DAMON)", url: "https://doi.org/10.1145/3366626.3368125", why: "DSec §5.2 用 DAMON + virtio-balloon 回收冷内存"}
+      - {type: post, id: "linux-core-scheduling", title: "Linux Core Scheduling", url: "https://docs.kernel.org/admin-guide/hw-vuln/core-scheduling.html", why: "DSec §5.2 为 LS 沙箱开启 core scheduling，防超卖下 SMT 干扰"}
+      - {type: paper, id: "2001-mitzenmacher-power-of-two", title: "The Power of Two Choices in Randomized Load Balancing", url: "https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf", why: "DSec §7 调度器用 power-of-k-choices 做沙箱放置"}
+
+  - key: G
+    title: "WebAssembly 与其它隔离"
+    description: "§9 的 Wasm、library OS、nested kernel 路线，外加 Wasm 性能与 V8 isolates 的 P3 补充。"
+    items:
+      - {type: paper, id: "2002.09344", title: "Faasm: Lightweight Isolation for Efficient Stateful Serverless Computing", url: "https://arxiv.org/abs/2002.09344", why: "§9 点名；Wasm + 共享内存的有状态 serverless"}
+      - {type: paper, id: "2020-gadepalli-sledge", title: "Sledge: A Serverless-first, Light-weight Wasm Runtime for the Edge", url: "https://doi.org/10.1145/3423211.3425680", why: "§9 点名；Wasm 边缘运行时"}
+      - {type: paper, id: "2019-jangda-not-so-fast", title: "Not So Fast: Analyzing the Performance of WebAssembly vs. Native Code", url: "https://www.usenix.org/conference/atc19/presentation/jangda", why: "P3：Wasm 性能天花板"}
+      - {type: post, id: "cloudflare-cloud-computing-without-containers", title: "Cloud Computing without Containers", url: "https://blog.cloudflare.com/cloud-computing-without-containers/", why: "P3：V8 isolates 路线（Workers）"}
+      - {type: paper, id: "2017-tsai-graphene-sgx", title: "Graphene-SGX: A Practical Library OS for Unmodified Applications on SGX", url: "https://www.usenix.org/conference/atc17/technical-sessions/presentation/tsai", why: "§9 点名；library OS"}
+      - {type: post, id: "microsoft-litebox", title: "LiteBox: a security-focused library OS", url: "https://github.com/microsoft/litebox", why: "§9 点名；2025 新 libOS"}
+      - {type: paper, id: "2015-dautenhahn-nested-kernel", title: "Nested Kernel: An Operating System Architecture for Intra-Kernel Privilege Separation", url: "https://doi.org/10.1145/2694344.2694386", why: "§9 点名；nested kernel"}
+      - {type: paper, id: "2025-zhang-erebor", title: "Erebor: A Drop-In Sandbox Solution for Private Data Processing in Untrusted Confidential Virtual Machines", url: "https://doi.org/10.1145/3689031.3717464", why: "§9 点名；机密 VM 内的沙箱"}
+
+  - key: H
+    title: "LLM 沙箱与 RL 训练框架"
+    description: "§9 LLM code execution platforms / RL training infrastructure。只精读与执行环境相关的章节。"
+    items:
+      - {type: post, id: "e2b-sandbox", title: "E2B: Open-source Secure Sandboxes for AI Code Execution", url: "https://github.com/e2b-dev/E2B", why: "§9 点名；Firecracker 系 agent 沙箱产品"}
+      - {type: post, id: "openai-code-interpreter", title: "OpenAI Code Interpreter: Agent Harness and Sandbox", url: "https://platform.openai.com/docs/guides/code-interpreter", why: "§9 点名"}
+      - {type: paper, id: "2602.02276", title: "Kimi K2.5: Visual Agentic Intelligence（Agent Swarm 部分）", url: "https://arxiv.org/abs/2602.02276", why: "§9 点名；只读 Agent Swarm 执行环境"}
+      - {type: paper, id: "2601.02780", title: "MiMo-V2-Flash Technical Report（执行环境部分）", url: "https://arxiv.org/abs/2601.02780", why: "§9 点名；只读执行环境"}
+      - {type: paper, id: "2508.14040", title: "ComputerRL: Scaling End-to-End Online RL for Computer Use Agents", url: "https://arxiv.org/abs/2508.14040", why: "§9 点名；computer-use 环境"}
+      - {type: paper, id: "2409.19256", title: "HybridFlow: A Flexible and Efficient RLHF Framework (veRL)", url: "https://arxiv.org/abs/2409.19256", why: "§9 点名"}
+      - {type: post, id: "thudm-slime", title: "Slime: an LLM post-training framework for RL scaling", url: "https://github.com/THUDM/slime", why: "§9 点名"}
+      - {type: paper, id: "2405.11143", title: "OpenRLHF: An Easy-to-use, Scalable and High-performance RLHF Framework", url: "https://arxiv.org/abs/2405.11143", why: "§9 点名"}
+      - {type: paper, id: "2511.14617", title: "Seer: Online Context Learning for Fast Synchronous LLM RL", url: "https://arxiv.org/abs/2511.14617", why: "§9 点名"}
+      - {type: paper, id: "2609.19969", title: "DeepSeek-V4.1-Flash（§6.2 agent loop 部分）", url: "https://arxiv.org/abs/2609.19969", why: "DSec §6.2 agent loop 与 RL 框架分离的出处"}
+      - {type: paper, id: "2601.11868", title: "Terminal-Bench (Merrill et al., 2026)", url: "https://arxiv.org/abs/2601.11868", why: "DSec 评测负载之一"}
