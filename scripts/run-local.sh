@@ -5,7 +5,7 @@
 #
 #   scripts/run-local.sh all                 # sync → queue → daily（周日再加 report）；每天 08:00 定时
 #   scripts/run-local.sh tick                # sync → queue：有待办才干活；每小时 :30 定时
-#   scripts/run-local.sh bg <命令…>          # 后台运行（定时任务用），日志在 .cache/logs/
+#   scripts/run-local.sh bg <命令…>          # 后台运行，日志在 .cache/logs/（定时任务经 scripts/scheduled.sh 调用）
 #   scripts/run-local.sh daily [YYYY-MM-DD]  # 抓取 + 精排 → daily/<date> PR
 #   scripts/run-local.sh sync                # 已合并 PR 里勾选的条目 → to-read issue
 #   scripts/run-local.sh queue               # 处理待办：open 的 to-read / research-topic issue
