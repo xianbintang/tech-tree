@@ -194,10 +194,17 @@ Claude 桌面 App 左侧栏「Scheduled」里有两个任务：
 
 | 任务 | 时间 | 执行 | 作用 |
 |---|---|---|---|
-| `tech-tree-daily` | 每天 08:00 | `scripts/run-local.sh bg all` | sync → queue → daily（出当天推送 PR），周日再加周报 |
-| `tech-tree-hourly` | 每小时 :30 | `scripts/run-local.sh bg tick` | sync → queue：处理勾选项和待办 issue；没有待办几秒就结束 |
+| `tech-tree-daily` | 每天 08:00 | `scripts/scheduled.sh all` | sync → queue → daily（出当天推送 PR），周日再加周报 |
+| `tech-tree-hourly` | 每小时 :30 | `scripts/scheduled.sh tick` | sync → queue：处理勾选项和待办 issue；没有待办几秒就结束 |
 
-- **定时任务只是启动器**：用 `bg` 在后台启动脚本后，会话立刻结束。所以会话显示「完成」不代表流水线跑完了。进度看 `.cache/logs/`，结果看 GitHub / 飞书。
+- **不会弹权限确认**：任务只执行 `scripts/scheduled.sh` 这一条固定命令（内部先在空闲时 `git pull` 更新代码，再在后台启动流水线），这条命令已加入本机 `.claude/settings.local.json` 的允许列表：
+
+  ```json
+  {"permissions": {"allow": ["Bash(/Users/xianb/workspace/tech-tree/scripts/scheduled.sh *)"]}}
+  ```
+
+  只放行这一个脚本，不需要给启动会话开 bypass 全权限。换电脑时记得把这条加回去。
+- **定时任务只是启动器**：在后台启动脚本后，会话立刻结束。所以会话显示「完成」不代表流水线跑完了。进度看 `.cache/logs/`，结果看 GitHub / 飞书。
 - **不会撞车**：同一时间只允许一个流水线运行（`.cache/lock` 记录进程号），后到的会自动跳过。hourly 放在 :30，就是为了避开 08:00。
 - **改时间**：在任务里编辑，或在 Claude 会话里说「把 tech-tree-daily 改到每天 7 点」。
 - **立即跑一次**：点「Run now」。注意对 daily 点会多生成一个 `-2` 版推送；只想处理待办，就对 hourly 点。
@@ -245,7 +252,7 @@ scripts/setup-github.sh        # 标签 + Pages（仓库已配置过则可跳过
 cp /path/to/old/.env.local .   # 推送凭据（可选）
 ```
 
-最后在 Claude 桌面 App 里重新创建两个定时任务：让 Claude「每天 08:00 在 ~/workspace/tech-tree 运行 scripts/run-local.sh bg all」和「每小时 :30 运行 scripts/run-local.sh bg tick」。
+最后在 Claude 桌面 App 里重新创建两个定时任务：让 Claude「每天 08:00 运行 /Users/xianb/workspace/tech-tree/scripts/scheduled.sh all」和「每小时 :30 运行 …/scripts/scheduled.sh tick」，并把第 4 节的允许规则加进 `.claude/settings.local.json`。
 
 ## 8. 重置与维护
 

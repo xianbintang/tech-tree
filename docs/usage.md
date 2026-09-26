@@ -202,7 +202,7 @@ read PR「Closes #N」 ── 你 Merge ──▶ issue 自动关闭
 
 | 现象 | 原因 / 处理 |
 |---|---|
-| 08:00 没有生成 PR | 先看 `.cache/logs/` 里最新的 `*-all.log`；没有日志说明任务没启动：桌面 App 没开，或定时任务在等权限确认。打开侧边栏「Scheduled」→ `tech-tree-daily` 查看；App 关着时错过的任务会在下次启动时补跑 |
+| 08:00 没有生成 PR | 先看 `.cache/logs/` 里最新的 `*-all.log`；没有日志说明任务没启动：桌面 App 没开，或允许列表里缺少 `scripts/scheduled.sh`（见配置手册第 4 节）。打开侧边栏「Scheduled」→ `tech-tree-daily` 查看；App 关着时错过的任务会在下次启动时补跑 |
 | 日志里出现 `another run in progress … skipping` | 正常：上一次运行还没结束，本次跳过。锁里记录了进程号，进程不在了会自动清理，一般不用手动处理 |
 | 定时任务会话显示「完成」，但 PR 还没出来 | 正常：定时任务只负责在后台启动脚本，然后就结束；实际进度看 `.cache/logs/` |
 | `working tree has uncommitted KB changes` | 主仓库的 `inbox/ notes/ wiki/ …` 下有未提交的改动。先提交或 stash；自己手改知识库请走分支 + PR |
