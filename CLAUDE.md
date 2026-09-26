@@ -24,6 +24,7 @@ Claude Code 读本文件，Codex 读 `AGENTS.md`（软链到本文件）。两�
 - 概念页 slug：英文小写 kebab-case，如 `grpo`、`microvm-sandbox`、`kv-cache-offload`。一个概念一页，先搜再建，避免同义重复（在 frontmatter `aliases` 里记中文名/别名）。
 - 链接统一用 Obsidian 双链：`[[grpo]]`、`[[2609.23377]]`、`[[grpo|GRPO 算法]]`。文件名（不含 .md）全库唯一。
 - 论文笔记文件名 = arXiv ID（无版本号）；非 arXiv 论文用 `<year>-<first-author>-<slug>`。
+- 阅读清单（`config/reading-lists/`）里的条目一律用清单里的 `id` 作文件名（博文 / 文档也是 `notes/posts/<id>.md`），frontmatter 加 `parent:` 指向母论文。
 
 ### Frontmatter（必填，`pipeline/wiki_lint.py` 会检查）
 

@@ -144,7 +144,28 @@ papers:
 
 也可以直接让 Claude 做：在仓库里打开 `claude`，说「把 xxx 的博客加到订阅源，先验证 feed 能用，再提 PR」。
 
-### 2.4 当前订阅（60 个）
+### 2.4 阅读清单 `config/reading-lists/*.yaml`
+
+用于围绕一篇母论文按分类精读，每个分类对应一个 tracking issue，每批出一个 PR。
+
+```yaml
+name: dsec-refs                       # 清单名，出现在 issue 标题里
+parent: {id: "2609.22978", title: "…", url: "https://arxiv.org/abs/2609.22978"}   # 母论文（可选）
+labels: [reading-list, dsec-refs]
+categories:
+  - key: B
+    title: "隔离运行时 / microVM"
+    description: "这一类为什么读"
+    items:
+      - {type: paper, id: "2020-agache-firecracker", title: "Firecracker: …",
+         url: "https://www.usenix.org/conference/nsdi20/presentation/agache", why: "DSec microVM 底座"}
+```
+
+- `id`：arXiv 论文用 arXiv ID，其它论文用 `<年>-<一作>-<短名>`，文档 / 博客用短名。它就是笔记文件名。
+- `url`：落地页、PDF、DOI 都可以。USENIX 页面会自动找到 PDF；ACM 被拦截时自动改用 Firecrawl。
+- 修改后再运行 `create` 只会补建新分类；已存在的 issue 不会改动。给已存在的分类加条目，直接编辑 issue 正文，按同样格式加一行勾选项即可。
+
+### 2.5 当前订阅（60 个）
 
 - **Anthropic**：Engineering、Research、News、Transformer Circuits
 - **OpenAI**：Research、Engineering、Publications、News

@@ -106,12 +106,27 @@
 
 想立即执行：`scripts/run-local.sh topic <issue号>`。
 
-### 3.5 周报（weekly-report）
+### 3.5 引用链 / 阅读清单精读（batch）
+
+围绕一篇母论文系统读它的引用，比如 DSec 的 Related Work：
+
+1. 在 `config/reading-lists/<名称>.yaml` 里按分类列好条目（格式见配置手册 2.4）。
+2. 运行 `uv run python -m pipeline.reading_list create config/reading-lists/<名称>.yaml`，**每个分类建一个 tracking issue**（`[reading-list] …`，正文是勾选清单，重复运行不会重复建）。
+3. 想读哪个分类，就给那个 issue 打上 `to-read` 标签。下一次每小时检查会把**整个分类精读成一个 PR**：
+   - 每篇一条笔记（`notes/<papers|posts>/<id>.md`，含「与母论文的关系」）；
+   - 更新概念页；
+   - PR 描述里有本分类的**综述**（工作之间的演进、对应母论文哪些机制、对我们平台的启发）。
+4. 读完的条目会在 issue 里自动打勾。一个 PR 最多 8 篇（`BATCH_MAX`），剩下的顺延到下一个 PR；分类全部读完后，合并最后一个 PR 就会关闭该 issue。
+5. 不想等可以立即跑：`scripts/run-local.sh batch <issue号>`。
+
+非 arXiv 论文（USENIX / ACM / MLSys）会自动下载 PDF 并提取正文（`pipeline/fetch_paper.py`）。ACM 等拦截爬虫的站点改用 Firecrawl 读取。PDF 和全文只放在本地 `.cache/`，不入库。
+
+### 3.6 周报（weekly-report）
 
 每周日 08:00 的定时运行会额外生成 `reports/weekly/<年>-W<周>.md`，内容包括：本周数字、3–5 条跨论文洞见、趋势、知识图谱变化、积压清单、下周建议。
 手动生成：`scripts/run-local.sh report`。
 
-### 3.6 知识库问答（query）
+### 3.7 知识库问答（query）
 
 在仓库目录里打开 Claude Code，直接提问：
 
@@ -123,11 +138,11 @@ cd ~/workspace/tech-tree && claude
 
 `CLAUDE.md` 要求它先查 `wiki/` 和 `notes/`，引用具体页面，不够时再上网，并标明哪些内容来自外部。
 
-### 3.7 知识库体检（lint）
+### 3.8 知识库体检（lint）
 
 `scripts/run-local.sh lint` 检查四类问题：断链、孤儿概念页、没有链接任何概念的笔记、frontmatter 缺字段。每次精读结束也会自动跑一遍。
 
-### 3.8 阅读站点
+### 3.9 阅读站点
 
 合并到 master 后，GitHub Pages 会自动重建 <https://xianbintang.github.io/tech-tree/>。站点支持中文搜索、`[[双链]]` 跳转、公式和 mermaid 图。这是仓库里唯一的 GitHub Action，只做静态构建，不调用模型，也不使用任何密钥。
 
@@ -144,6 +159,7 @@ cd ~/workspace/tech-tree && claude
 | `scripts/run-local.sh sync` | 最近 14 天内已合并 PR 里的勾选项转成 `to-read` issue（幂等，重复跑不会重复建） |
 | `scripts/run-local.sh queue` | 处理打开状态的 `to-read` / `research-topic` issue |
 | `scripts/run-local.sh read <issue号 \| arXiv ID \| URL>` | 立即精读 |
+| `scripts/run-local.sh batch <issue号> [篇数]` | 立即把一个阅读清单分类精读成一个 PR |
 | `scripts/run-local.sh topic <issue号>` | 立即调研 |
 | `scripts/run-local.sh report` | 生成本周周报 |
 | `scripts/run-local.sh lint` | 知识库体检 |
@@ -157,6 +173,7 @@ cd ~/workspace/tech-tree && claude
 | `BASE` | `master` | 从哪个分支切出、向哪个分支提 PR |
 | `QUEUE_READS` | `3` | 每次 queue 最多精读几篇 |
 | `QUEUE_TOPICS` | `1` | 每次 queue 最多调研几个 |
+| `BATCH_MAX` | `8` | 阅读清单一个 PR 最多几篇 |
 
 示例：
 
@@ -174,6 +191,8 @@ NO_PR=1 scripts/run-local.sh daily
 |---|---|
 | `daily` | 每日推送 PR |
 | `to-read` → `reading` | 待精读 → 精读中（本地已领取，PR 已开或正在跑） |
+| `reading-list` | 阅读清单分类 issue（加 `to-read` 即开始按分类批量精读） |
+| `dsec-refs` | DSec 引用链阅读清单 |
 | `note` | 精读笔记 PR |
 | `research-topic` → `researching` | 待调研 → 调研中 |
 | `report` | 周报 / 专题报告 PR |

@@ -10,6 +10,7 @@
 #   scripts/run-local.sh sync                # 已合并 PR 里勾选的条目 → to-read issue
 #   scripts/run-local.sh queue               # 处理待办：open 的 to-read / research-topic issue
 #   scripts/run-local.sh read  <issue | arXiv-id | URL>
+#   scripts/run-local.sh batch <reading-list issue> [max]   # 一个分类精读成一个 PR（默认最多 BATCH_MAX=8 篇）
 #   scripts/run-local.sh topic <issue>
 #   scripts/run-local.sh report              # 周报 → report/<week> PR
 #   scripts/run-local.sh lint                # 知识库体检（本地打印）
@@ -27,7 +28,7 @@ if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi
 AGENT=${AGENT:-claude}
 BASE=${BASE:-master}
 TODAY=$(TZ=Asia/Shanghai date +%F)
-TOOLS="Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Bash(uv run python -m pipeline.*),Bash(ls:*),Bash(gh issue view:*)"
+TOOLS="Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Bash(uv run python -m pipeline.*),Bash(ls:*),Bash(gh issue view:*),mcp__firecrawl__firecrawl_scrape"
 TRAILER="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ORIG_BRANCH=$(git branch --show-current)
 mkdir -p .cache/logs
@@ -170,14 +171,74 @@ case "${1:-}" in
     ;;
 
   queue)
+    # Reading lists: at most one category batch (= one PR) per tick.
+    for n in $(gh issue list --state open --label to-read --label reading-list --json number,labels \
+                 --jq '[.[] | select([.labels[].name] | index("reading") | not)] | sort_by(.number) | .[:1] | .[].number'); do
+      "$0" batch "$n" || echo "::batch #$n failed"
+    done
     for n in $(gh issue list --state open --label to-read --json number,labels \
-                 --jq '[.[] | select([.labels[].name] | index("reading") | not)] | .[:'"${QUEUE_READS:-3}"'] | .[].number'); do
+                 --jq '[.[] | select([.labels[].name] | (index("reading") or index("reading-list")) | not)] | .[:'"${QUEUE_READS:-3}"'] | .[].number'); do
       "$0" read "$n" || echo "::read #$n failed"
     done
     for n in $(gh issue list --state open --label research-topic --json number,labels \
                  --jq '[.[] | select([.labels[].name] | index("researching") | not)] | .[:'"${QUEUE_TOPICS:-1}"'] | .[].number'); do
       "$0" topic "$n" || echo "::topic #$n failed"
     done
+    ;;
+
+  batch)
+    issue=${2:?usage: batch <reading-list issue> [max]}
+    max=${3:-${BATCH_MAX:-8}}
+    claim "$issue" reading
+    load_issue "$issue"
+    uv run python -m pipeline.reading_list next "$issue" --max "$max" > .cache/batch.json
+    count=$(jq length .cache/batch.json)
+    if [ "$count" -eq 0 ]; then
+      echo "#$issue: nothing left to read"; release
+      gh issue edit "$issue" --remove-label reading --remove-label to-read >/dev/null; exit 0
+    fi
+    category=$(jq -r '.title | sub("^\\[reading-list\\] *"; "")' .cache/issue.json)
+    n=$(( $(gh pr list --state all --json headRefName \
+          --jq "[.[] | select(.headRefName | startswith(\"batch/$issue-\"))] | length") + 1 ))
+    branch="batch/$issue-$n"
+    start_branch "$branch"
+    : > .cache/batch_summaries.md
+    done_ids=()
+    for i in $(seq 0 $((count - 1))); do
+      jq ".[$i]" .cache/batch.json > .cache/item.json
+      id=$(jq -r .id .cache/item.json); type=$(jq -r .type .cache/item.json); ititle=$(jq -r .title .cache/item.json)
+      echo "── [$((i + 1))/$count] $ititle"
+      rm -f .cache/item_summary.md
+      if agent "按 .claude/skills/deep-read/SKILL.md 精读一篇：条目信息在 .cache/item.json（来自阅读清单 issue #$issue「$category」；why 字段是读它的原因；parent 字段是母论文 ID）。
+笔记文件名用条目 id：${type}s → notes/${type}s/$id.md，元数据卡 sources/${type}s/$id.md，frontmatter 写 id: \"$id\"、issue: $issue、parent: \"$(jq -r .parent .cache/item.json)\"。
+完成后按 .claude/skills/ingest-wiki/SKILL.md 更新 wiki/concepts。今天是 $TODAY。只写文件，不做 git 操作，不写 .cache/pr_body.md。
+最后把本篇 3–5 行中文摘要（标题、核心贡献、与母论文的关系、对我们的启发）写到 .cache/item_summary.md。" \
+         && [ -f "notes/${type}s/$id.md" ]; then
+        done_ids+=("$id")
+        { echo "### $ititle"; echo "笔记：notes/${type}s/$id.md"; cat .cache/item_summary.md 2>/dev/null; echo; } >> .cache/batch_summaries.md
+      else
+        echo "::item $id failed (no notes/${type}s/$id.md)"
+      fi
+    done
+    if [ ${#done_ids[@]} -eq 0 ]; then echo "::batch #$issue produced nothing"; false; fi
+    uv run python -m pipeline.wiki_lint >/dev/null 2>&1 || true
+    left=$(( $(uv run python -m pipeline.reading_list left "$issue") - ${#done_ids[@]} ))
+    agent "为阅读清单分类「$category」（issue #$issue）这批精读写 PR 描述到 .cache/pr_body.md，并写 3 行以内推送摘要到 .cache/notify.txt。
+素材：.cache/batch_summaries.md（逐篇摘要）、对应的 notes/ 笔记、本次新增或更新的 wiki/concepts/ 页面、母论文笔记（若存在）。
+PR 描述结构：## 综述（一段到三段：这些工作之间的关系与演进、各自对应母论文哪些机制、对我们沙箱/调度平台的启发）；## 逐篇（每篇一行：标题 — 一句话 — 笔记路径）；## 知识库变化（新建/更新的概念页）；## 值得追问（可转成 issue 的问题）。
+只写这两个文件，不改其它文件，不做 git 操作。" || echo "## ${category}（${#done_ids[@]} 篇）" > .cache/pr_body.md
+    if [ "$left" -le 0 ]; then printf '\n\nCloses #%s\n' "$issue" >> .cache/pr_body.md
+    else printf '\n\nRefs #%s（本分类还剩 %s 篇，下一批会继续）\n' "$issue" "$left" >> .cache/pr_body.md; fi
+    url=$(finish_pr "$branch" "read(batch): ${category}（${#done_ids[@]} 篇）" note sources notes wiki | tail -1)
+    release
+    echo "$url"
+    if [ -z "${NO_PR:-}" ]; then
+      uv run python -m pipeline.reading_list tick "$issue" "${done_ids[@]}"
+      gh issue edit "$issue" --remove-label reading >/dev/null
+      [ "$left" -le 0 ] && gh issue edit "$issue" --remove-label to-read >/dev/null
+      gh issue comment "$issue" --body "📚 本批精读 ${#done_ids[@]} 篇：$url（剩余 $left 篇）" >/dev/null
+    fi
+    notify "📚 分类精读完成：$category（${#done_ids[@]} 篇）" "$url"
     ;;
 
   read)
