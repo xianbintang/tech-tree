@@ -17,7 +17,7 @@ from pathlib import Path
 
 import yaml
 
-from .common import log
+from .common import ROOT, log, read_json, write_json
 from .inbox_issues import gh
 
 LINE = re.compile(
@@ -77,16 +77,21 @@ def body_of(issue: str) -> str:
 
 
 def cmd_create(path: str, dry_run: bool) -> None:
+    """Idempotent. GitHub's issue listing lags a few seconds behind creation, so the
+    source of truth is state/reading-lists/<name>.json (committed); the listing (matched
+    on the hidden name/key marker) only covers issues created elsewhere."""
     spec = yaml.safe_load(Path(path).read_text())
-    existing = {
-        i["title"]: i["number"]
-        for i in json.loads(gh("issue", "list", "--state", "all", "--label", "reading-list",
-                               "--json", "number,title", "--limit", "200"))
-    } if not dry_run else {}
+    state_path = ROOT / "state" / "reading-lists" / f"{spec['name']}.json"
+    state: dict[str, int] = read_json(state_path, {})
+    if not dry_run:
+        for i in json.loads(gh("issue", "list", "--state", "open", "--limit", "300", "--json", "number,body")):
+            m = MARK.search(i["body"] or "")
+            if m and m.group(1) == spec["name"]:
+                state.setdefault(m.group(2), i["number"])
     for cat in spec["categories"]:
         title = issue_title(spec, cat)
-        if title in existing:
-            log(f"  exists #{existing[title]}  {title}")
+        if cat["key"] in state:
+            log(f"  exists #{state[cat['key']]}  {title}")
             continue
         body = render_body(spec, cat)
         if dry_run:
@@ -96,7 +101,11 @@ def cmd_create(path: str, dry_run: bool) -> None:
         for label in spec.get("labels", ["reading-list"]):
             args += ["--label", label]
         url = gh(*args).strip()
+        state[cat["key"]] = int(url.rsplit("/", 1)[-1])
+        write_json(state_path, dict(sorted(state.items())))  # after each create: safe on crash
         log(f"  created {url}  {title}")
+    if not dry_run:
+        write_json(state_path, dict(sorted(state.items())))
 
 
 def cmd_next(issue: str, limit: int) -> None:
