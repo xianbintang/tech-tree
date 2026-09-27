@@ -22,6 +22,11 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 
+# Terminals without a locale (LANG unset) break UTF-8 handling in subprocesses.
+# Variables next to CJK text are always written as ${var} for the same reason:
+# in the C locale bash reads a multibyte char's first byte as part of the name.
+export LANG="${LANG:-en_US.UTF-8}" LC_CTYPE="${LC_CTYPE:-en_US.UTF-8}"
+
 # Local-only secrets (FEISHU_WEBHOOK, …). Git-ignored; never leaves this machine.
 if [ -f .env.local ]; then set -a; . ./.env.local; set +a; fi
 
@@ -209,9 +214,9 @@ case "${1:-}" in
       id=$(jq -r .id .cache/item.json); type=$(jq -r .type .cache/item.json); ititle=$(jq -r .title .cache/item.json)
       echo "── [$((i + 1))/$count] $ititle"
       rm -f .cache/item_summary.md
-      if agent "按 .claude/skills/deep-read/SKILL.md 精读一篇：条目信息在 .cache/item.json（来自阅读清单 issue #$issue「$category」；why 字段是读它的原因；parent 字段是母论文 ID）。
-笔记文件名用条目 id：${type}s → notes/${type}s/$id.md，元数据卡 sources/${type}s/$id.md，frontmatter 写 id: \"$id\"、issue: $issue、parent: \"$(jq -r .parent .cache/item.json)\"。
-完成后按 .claude/skills/ingest-wiki/SKILL.md 更新 wiki/concepts。今天是 $TODAY。只写文件，不做 git 操作，不写 .cache/pr_body.md。
+      if agent "按 .claude/skills/deep-read/SKILL.md 精读一篇：条目信息在 .cache/item.json（来自阅读清单 issue #${issue}「${category}」；why 字段是读它的原因；parent 字段是母论文 ID）。
+笔记文件名用条目 id：${type}s → notes/${type}s/$id.md，元数据卡 sources/${type}s/$id.md，frontmatter 写 id: \"$id\"、issue: ${issue}、parent: \"$(jq -r .parent .cache/item.json)\"。
+完成后按 .claude/skills/ingest-wiki/SKILL.md 更新 wiki/concepts。今天是 ${TODAY}。只写文件，不做 git 操作，不写 .cache/pr_body.md。
 最后把本篇 3–5 行中文摘要（标题、核心贡献、与母论文的关系、对我们的启发）写到 .cache/item_summary.md。" \
          && [ -f "notes/${type}s/$id.md" ]; then
         done_ids+=("$id")
@@ -223,7 +228,7 @@ case "${1:-}" in
     if [ ${#done_ids[@]} -eq 0 ]; then echo "::batch #$issue produced nothing"; false; fi
     uv run python -m pipeline.wiki_lint >/dev/null 2>&1 || true
     left=$(( $(uv run python -m pipeline.reading_list left "$issue") - ${#done_ids[@]} ))
-    agent "为阅读清单分类「$category」（issue #$issue）这批精读写 PR 描述到 .cache/pr_body.md，并写 3 行以内推送摘要到 .cache/notify.txt。
+    agent "为阅读清单分类「${category}」（issue #${issue}）这批精读写 PR 描述到 .cache/pr_body.md，并写 3 行以内推送摘要到 .cache/notify.txt。
 素材：.cache/batch_summaries.md（逐篇摘要）、对应的 notes/ 笔记、本次新增或更新的 wiki/concepts/ 页面、母论文笔记（若存在）。
 PR 描述结构：## 综述（一段到三段：这些工作之间的关系与演进、各自对应母论文哪些机制、对我们沙箱/调度平台的启发）；## 逐篇（每篇一行：标题 — 一句话 — 笔记路径）；## 知识库变化（新建/更新的概念页）；## 值得追问（可转成 issue 的问题）。
 只写这两个文件，不改其它文件，不做 git 操作。" || echo "## ${category}（${#done_ids[@]} 篇）" > .cache/pr_body.md
@@ -236,9 +241,9 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
       uv run python -m pipeline.reading_list tick "$issue" "${done_ids[@]}"
       gh issue edit "$issue" --remove-label reading >/dev/null
       [ "$left" -le 0 ] && gh issue edit "$issue" --remove-label to-read >/dev/null
-      gh issue comment "$issue" --body "📚 本批精读 ${#done_ids[@]} 篇：$url（剩余 $left 篇）" >/dev/null
+      gh issue comment "$issue" --body "📚 本批精读 ${#done_ids[@]} 篇：${url}（剩余 $left 篇）" >/dev/null
     fi
-    notify "📚 分类精读完成：$category（${#done_ids[@]} 篇）" "$url"
+    notify "📚 分类精读完成：${category}（${#done_ids[@]} 篇）" "$url"
     ;;
 
   read)
@@ -253,7 +258,7 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
     claim "$issue" reading
     load_issue "$issue"
     start_branch "read/$issue"
-    agent "按 .claude/skills/deep-read/SKILL.md 精读 issue #$issue（内容在 .cache/issue.json），完成后按 .claude/skills/ingest-wiki/SKILL.md 更新 wiki/concepts。今天是 $TODAY。只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。"
+    agent "按 .claude/skills/deep-read/SKILL.md 精读 issue #${issue}（内容在 .cache/issue.json），完成后按 .claude/skills/ingest-wiki/SKILL.md 更新 wiki/concepts。今天是 ${TODAY}。只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。"
     uv run python -m pipeline.wiki_lint >/dev/null 2>&1 || true
     [ -s .cache/pr_body.md ] || echo "## 精读 #$issue" > .cache/pr_body.md
     printf '\n\nCloses #%s\n' "$issue" >> .cache/pr_body.md
@@ -276,7 +281,7 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
     claim "$issue" researching
     load_issue "$issue"
     start_branch "topic/$issue"
-    agent "按 .claude/skills/research-topic/SKILL.md 调研 issue #$issue（内容在 .cache/issue.json）。今天是 $TODAY。只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。"
+    agent "按 .claude/skills/research-topic/SKILL.md 调研 issue #${issue}（内容在 .cache/issue.json）。今天是 ${TODAY}。只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。"
     [ -s .cache/pr_body.md ] || echo "## 调研 #$issue" > .cache/pr_body.md
     printf '\n\nCloses #%s\n' "$issue" >> .cache/pr_body.md
     title=$(jq -r '.title | sub("^\\[topic\\] *"; "")' .cache/issue.json)
@@ -291,7 +296,7 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
     week=$(TZ=Asia/Shanghai date +%G-W%V)
     start_branch "report/$week"
     uv run python -m pipeline.week_context
-    agent "按 .claude/skills/weekly-report/SKILL.md 生成周报 reports/weekly/$week.md。本周上下文在 .cache/week.json，今天是 $TODAY。只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。"
+    agent "按 .claude/skills/weekly-report/SKILL.md 生成周报 reports/weekly/$week.md。本周上下文在 .cache/week.json，今天是 ${TODAY}。只写文件，不做 git 操作。最后写 .cache/pr_body.md 与 .cache/notify.txt。"
     url=$(finish_pr "report/$week" "report: 学习周报 $week" report reports | tail -1) || exit 0
     echo "$url"
     notify "🗓️ 学习周报 $week" "$url"
