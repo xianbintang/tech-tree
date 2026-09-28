@@ -5,3 +5,6 @@ site/
 _site_src/
 .DS_Store
 .env.local
+
+# Downloaded paper PDFs for personal reading (copyrighted; never commit)
+library/
