@@ -174,6 +174,7 @@ categories:
 - **Meta**：AI Blog、Engineering
 - **DeepSeek**：News、HF 新模型
 - **Kimi**：HF 新模型
+- **Xiaomi MiMo**：HF 新模型
 - **阿里**：Qwen HF 新模型、阿里云博客（已过滤）
 - **腾讯**：混元 HF 新模型
 - **实验室 / 系统**：Thinking Machines、HuggingFace、vLLM、PyTorch、Together、SemiAnalysis、GitHub、Cloudflare、Fly.io、Kubernetes
