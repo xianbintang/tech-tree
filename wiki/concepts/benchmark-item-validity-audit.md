@@ -1,0 +1,56 @@
+---
+title: "Agentic Benchmark 任务级有效性审计"
+aliases: [benchmark item validity audit, all-fail task adjudication, certified-unsolved, genuine hardness vs fake hardness]
+created: 2026-09-29
+updated: 2026-09-29
+sources: [2609.26826]
+---
+
+# Agentic Benchmark 任务级有效性审计
+
+## 一句话定义
+
+把"某任务所有 agent 都失败（all-fail / 0% pass rate）"这一单一分数，拆解为多种证据支撑的结论（真难 / oracle 坏了 / 基础设施坏了 / 只能靠 verifier 漏洞通过 / 证据不足），而不是默认等同于"真正的能力缺口" [[2609.26826]]。
+
+## 为什么对我们重要
+
+我们平台不只是跑 agent 的沙箱，也承担着"评测/验收结果是否可信"的责任：训练用的可验证奖励环境、CI 里的 agent 评测、内部基准都会遇到"通过率是 0，但不知道是真难还是环境/verifier 坏了"的问题。这套有序验证 screen 提供了一份可以直接搬到我们内部评测基础设施里的检查清单 [[2609.26826]]。
+
+## 核心机制 / 主要变体
+
+- 区分两个维度：**难度（difficulty）**是记录设置下解题的实际花费（用 output token 衡量的描述性指标）；**可行性（feasibility）**是"是否存在一条会被验证通过的正确路线"——pass rate 把这两者混在一起，必须拆开看 [[2609.26826]]。
+- 三类控制实验分别回答不同问题：**oracle run**（跑作者参考解，测试既定路线是否被 verifier 接受，通过只能证明"至少有一条路线被接受"，不能证明 verifier 完备）、**nop run**（提交空解，测试 verifier 能否拒绝最简单的空解泄漏）、**cheat-variant trial**（诱导 agent 用任意手段通过，探测 verifier 能被诱导接受什么）[[2609.26826]]。
+- 对每个 all-fail（无诚实通过）任务应用**有序、互斥的判定规则**（先匹配先得）[[2609.26826]]：
+  1. 参考解跑不过 → **broken oracle**（oracle 坏了）
+  2. 基础设施失败占普通失败次数 ≥ 一半（默认阈值 τ=0.5）→ **infrastructure-limited**（基础设施瓶颈）
+  3. 存在与 reward 无关、独立可复现、能在验证时骗过 verifier 的持久化证据 → **exploit-only-passable**（只能靠 verifier 漏洞通过）
+  4. 至少有一次 oracle run 且全部通过 → **certified-unsolved candidate**（证据支持"真难"，但不等于"证明不可能"）
+  5. 其余 → **uncertified solvability**（证据不足，保持未解决状态）
+- 严格的 verifier 绕过证据要求：必须是**独立于 reward 恢复的持久化 artifact**，能在验证时真正骗过检查；分数异常、能访问 verifier 文件、agent 事后自己撤销的临时改动都不算数 [[2609.26826]]。
+
+## 工程要点与数字
+
+- Terminal-Bench 3 / Frontier-Bench 0.1 上实测：125 个 all-fail 任务中，只有 78 个存活为 certified-unsolved；14 个 oracle 坏了，8 个基础设施瓶颈，4 个只能靠漏洞通过，21 个证据不足 [[2609.26826]]。
+- **认证强度阶梯**（Table 1）：125 个从未通过的任务 → 85 个观察到 oracle 通过 → 79 个在 τ=0.5 下基础设施干净 → 78 个无严格绕过证据 → 若进一步要求至少 2 次独立 oracle run，只剩 25 个。78 个 certified-unsolved 里有 53 个只有 1 次参考解记录，证据强度并不均匀 [[2609.26826]]。
+- 可靠性/敏感性检查（Table 2）：判分小组对有争议 trial 的一致率 48/53，小组多数意见与人工标注一致率 41/53，12/12 个抽样标签在对抗性复核下保持不变，基础设施阈值敏感性分析下只有 1–3 个任务标签会变化——说明五分类结论对阈值选择不算脆弱 [[2609.26826]]。
+- 被拒的 555 个 PR 中，349 个进入过 trial harness：约 31% 诚实通过率 > 0.5，约 42% ≤ 0.2；排除明显 verifier 缺陷的任务后，"agent 真的解不出来"的占比升到约 45%——即很多被拒任务不是因为太简单，而是因为"难"的方式不支持前沿能力主张 [[2609.26826]]。
+- 额外的难度信号：在 346 个至少通过一次的任务里，把"广义真难候选"（217 个）与"可解任务"（129 个）按首次诚实通过所需的最小 output token 比较，中位数 24829 vs 12388 tokens，AUC 0.750（95% CI [0.700, 0.801]）——通过率饱和之后，token 成本仍能提供有区分度的难度信号 [[2609.26826]]。
+
+## 争议与矛盾
+
+（暂无跨来源分歧，仅一篇来源）
+
+## 开放问题
+
+- certified-unsolved 标签本身不证明"内在困难"、"verifier 完备"或"失败发生在预期的能力关键点上"；53/78 只有单次 oracle 记录，独立复现的参考解仍缺失 [[2609.26826]]。
+- 论文未做受控的"提示阶梯"实验（固定任务/环境/模型/预算，只加预先注册的提示信息，看任务是否从失败翻转为成功），无法区分"缺上下文"与"真正能力不足" [[2609.26826]]。
+- token 成本信号混杂了推理长度、工具调用、重试策略、harness 策略等多个因素，是观察性而非因果性的难度度量 [[2609.26826]]。
+
+## 相关概念
+
+[[terminal-bench]]、[[verifiable-reward-environment-generation]]
+
+## 相关来源
+
+- [[2609.26826]] — 提出这套五分类有序验证 screen，并在 Terminal-Bench 3 / Frontier-Bench 0.1 的 125 个 all-fail 任务上做实证审计
+</content>

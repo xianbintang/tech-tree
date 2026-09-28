@@ -2,7 +2,7 @@
 title: "可验证奖励的 agentic 环境生成"
 aliases: [verifiable reward environment generation, agentic environment synthesis, RL 环境自动构造]
 created: 2026-09-25
-updated: 2026-09-25
+updated: 2026-09-29
 sources: [2609.27321]
 ---
 
@@ -37,7 +37,7 @@ sources: [2609.27321]
 
 ## 相关概念
 
-[[vhd-play]]
+[[vhd-play]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）
 
 ## 相关来源
 
