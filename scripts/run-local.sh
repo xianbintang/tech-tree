@@ -245,7 +245,8 @@ case "${1:-}" in
     done
     if [ ${#done_ids[@]} -eq 0 ]; then echo "::batch #$issue produced nothing"; false; fi
     uv run python -m pipeline.wiki_lint >/dev/null 2>&1 || true
-    left=$(( $(uv run python -m pipeline.reading_list left "$issue") - ${#done_ids[@]} ))
+    left=$(( $(uv run python -m pipeline.reading_list left "$issue" --scope all) - ${#done_ids[@]} ))
+    queue_left=$(( $(uv run python -m pipeline.reading_list left "$issue" --scope queue) - ${#done_ids[@]} ))
     agent "为阅读清单分类「${category}」（issue #${issue}）这批精读写 PR 描述到 .cache/pr_body.md，并写 3 行以内推送摘要到 .cache/notify.txt。
 素材：.cache/batch_summaries.md（逐篇摘要）、对应的 notes/ 笔记、本次新增或更新的 wiki/concepts/ 页面、母论文笔记（若存在）。
 PR 描述结构：## 综述（一段到三段：这些工作之间的关系与演进、各自对应母论文哪些机制、对我们沙箱/调度平台的启发）；## 逐篇（每篇一行：标题 — 一句话 — 笔记路径）；## 知识库变化（新建/更新的概念页）；## 值得追问（可转成 issue 的问题）。
@@ -256,9 +257,10 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
     release
     echo "$url"
     if [ -z "${NO_PR:-}" ]; then
-      uv run python -m pipeline.reading_list tick "$issue" "${done_ids[@]}"
+      uv run python -m pipeline.reading_list done "$issue" --pr "${url##*/}" "${done_ids[@]}"
       gh issue edit "$issue" --remove-label reading >/dev/null
-      [ "$left" -le 0 ] && gh issue edit "$issue" --remove-label to-read >/dev/null
+      # Stop queueing once what was asked for (ticked items, or everything) is done.
+      if [ "$queue_left" -le 0 ]; then gh issue edit "$issue" --remove-label to-read >/dev/null; fi
       gh issue comment "$issue" --body "📚 本批精读 ${#done_ids[@]} 篇：${url}（剩余 $left 篇）" >/dev/null
     fi
     notify "📚 分类精读完成：${category}（${#done_ids[@]} 篇）" "$url"

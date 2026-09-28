@@ -116,7 +116,9 @@
    - 每篇一条笔记（`notes/<papers|posts>/<id>.md`，含「与母论文的关系」）；
    - 更新概念页；
    - PR 描述里有本分类的**综述**（工作之间的演进、对应母论文哪些机制、对我们平台的启发）。
-4. 读完的条目会在 issue 里自动打勾。一个 PR 最多 8 篇（`BATCH_MAX`），剩下的顺延到下一个 PR；分类全部读完后，合并最后一个 PR 就会关闭该 issue。
+4. **勾选 = 我要读**（和每日推送 PR 一致）：勾选部分条目，就只读勾选的；一个都不勾，就读全部。
+   读完的条目行尾会标上 `✅ 已读（#PR）`，勾选自动去掉。一个 PR 最多 8 篇（`BATCH_MAX`），剩下的顺延到下一个 PR。
+   勾选的读完后会自动摘掉 `to-read`；整个分类全部读完后，合并最后一个 PR 就会关闭该 issue。
 5. 不想等可以立即跑：`scripts/run-local.sh batch <issue号>`。
 
 非 arXiv 论文（USENIX / ACM / MLSys）会自动下载 PDF 并提取正文（`pipeline/fetch_paper.py`）。ACM 等拦截爬虫的站点改用 Firecrawl 读取。PDF 和全文只放在本地 `.cache/`，不入库。
