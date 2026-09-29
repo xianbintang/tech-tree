@@ -1,0 +1,67 @@
+---
+title: "Generation-Execution-Feedback (GEF) Loop"
+aliases: [GEF loop, Generation-Execution-Feedback, 环境规模化, environment scaling]
+created: 2026-09-29
+updated: 2026-09-29
+sources: [2511.09586, 2509.13311]
+---
+
+# Generation-Execution-Feedback (GEF) Loop
+
+## 一句话定义
+
+把 agentic RL 里"环境-agent"交互形式化为三阶段循环：环境生成任务（Generation）→ agent 在环境中执行产生动作-观测轨迹（Execution）→ 环境评估轨迹并给出反馈（Feedback），反馈驱动下一轮任务生成；"环境规模化"就是让这三个阶段各自朝更高复杂度、真实性、交互性演化 [[2511.09586]]。
+
+## 为什么对我们重要
+
+这个框架把"agentic RL 需要什么样的环境基础设施"拆成了三个边界清晰的阶段，恰好对应我们关心的岗位分工：任务生成主要是数据/环境平台的职责，**任务执行阶段是我们沙箱平台的核心职责**（隔离、并发、可复现的执行环境），反馈阶段依赖沙箱提供稳定可信的执行结果作为验证输入。用这个框架去拆解一篇新论文，能快速判断它是在解决哪个阶段的问题、跟我们平台的关系有多直接 [[2511.09586]]。
+
+## 核心机制 / 主要变体
+
+**阶段一：任务生成（Task Generation）**
+
+- 复杂度规模化（Complexity Scaling）：任务结构从单步 → 多轮多步的 sequential → 有层级/组合结构的 compositional（如 TaskCraft 同时拓展宽度多子目标和深度更长工具链）→ 带分支逻辑的 graph-based（WebShaper、WebSailor），深度可达 30 步 [[2511.09586]]。
+- 动态规模化（Dynamic Scaling）：环境按 agent 的成功率/进度率调度任务难度（课程学习）；代表范式是 challenger-solver 协同进化（R-Zero）——challenger 依据 solver 的不确定性提出"边界难度"任务，solver 在过滤后的任务集上训练，形成渐进变难的课程 [[2511.09586]]。
+- 多样性规模化（Diversity Scaling）：跨领域异构环境（Web/具身/代码/工具）能提升域内外性能，但存在边际效用递减；"简单任务放复杂环境"可能比"复杂任务放简单环境"更有效，因此环境级多样性比任务级多样性更值得投入 [[2511.09586]]。
+
+**阶段二：任务执行（Task Execution）**
+
+- 交互性规模化（Interactivity Scaling）：从"单一静态 ground-truth 路径"评测转向允许 agent 真正调用 API/生成代码/操作 GUI，并据中间结果调整后续动作；主要瓶颈是 API 调用成本，离线真实数据库快照（读写函数模拟环境状态）是常见折中方案，兼顾成本与真实感 [[2511.09586]]。**AgentScaler（[[2509.13311]]）是这一折中方案的完整工程实现**：把每个 function 定义为对领域数据库 schema 的 read/write 操作，工具依赖图（参数相似度 + LLM 校验边）+ Louvain 社区发现自动把 3 万+ API 划分成 1,000+ 领域，每个领域物化出数据库 schema 和可执行 Python 工具，任务构造时在工具图上定向游走采样逻辑连贯的调用序列并真实执行、持续追踪数据库状态 [[2509.13311]]。
+- 真实性规模化（Realism Scaling）：从静态网页截图问答转向可执行的代码/浏览器/操作系统环境；多智能体场景下真实性体现为通信基础设施是否可靠——ARE（Andrews et al., 2025）把 agent 时钟与环境时钟解耦，其他 agent 的活动视为独立异步事件，世界状态异步演化 [[2511.09586]]。
+
+**阶段三：反馈（Feedback）**
+
+- 密度（Density）：轨迹级结果奖励（稀疏、训练稳定）vs 步骤级过程奖励（密集、易 reward hacking）；PR-Clip-Delta 用相邻步骤奖励差裁剪缓解不稳定 [[2511.09586]]。
+- 粒度（Granularity）：从二元信号/单一分数演进到 Rubrics as Rewards 的清单式、逐实例评分规则，是二元正确性信号与宽泛偏好排序之间的折中 [[2511.09586]]。
+- 自动化（Automation）：LLM-as-a-Judge → 训练专用 reward model → agentic 验证（外部搜索工具核实事实）；自动化会放大 verbosity/position/egocentric 等评委偏见 [[2511.09586]]。**AgentScaler 给出一个完全不依赖 LLM 判分的自动化验证样例**：三级漏斗过滤——格式合法性（轮次交替 + n-gram 去重）→ 数据库最终状态与 gold 状态比对（验证 write 型工具）→ 工具序列/参数精确匹配（覆盖纯 read 型工具，状态比对失效场景）；且刻意保留含工具调用报错的轨迹以提升鲁棒性，而非一律丢弃 [[2509.13311]]。
+- 客观性（Objectivity）：RLVR 在数学/代码等易验证域效果好，创意写作/医疗咨询等域缺乏 ground truth；BRPO 用成对生成式奖励模型规避直接打分创造力，ARE 把参数匹配硬检查与生成式 rubric 软检查结合 [[2511.09586]]。
+- 鲁棒性（Robustness）：奖励层面防噪声（软概率化奖励）与防 hacking（overseer 评估动作未来效用）；环境层面防崩溃/延迟/工具输出损坏（Trinity-RFT 用异步推理+重试，Tongyi DeepResearch 用缓存+重试+切换 provider）[[2511.09586]]。
+
+三阶段核心挑战是 [[generator-verifier-asymmetry]]：易验证域生成任务难、验证便宜；易生成域提任务容易、验证需要主观判断或专家知识 [[2511.09586]]。
+
+## 工程要点与数字
+
+- SWE 方向的量化证据：SWE-Gym-32B（2,438 任务、491 轨迹，真实仓库）SWE-bench 解决率 20.6% → R2E-Gym-32B（8,135 任务、3,321 轨迹，程序化合成）34.4% → SWE-Smith-32B（50,137 任务、5,016 轨迹，真实+合成混合）40.2%——任务/轨迹规模每提升一个数量级，下游解决率显著提升 [[2511.09586]]。
+- GAIA 基准上，任务结构从 sequential 到 graph-based、深度从个位数到 30 步，分数随之走高：WebDancer-32B 40.7 → WebExplorer-8B 50.0 → WebShaper-32B 52.4 → WebSailor-32B 53.2（同期工作横向陈列，非严格消融）[[2511.09586]]。
+- SWE 场景里 Docker 是执行沙箱的事实标准，兼顾跨机器一致性与隔离安全 [[2511.09586]]。
+- 论文**未讨论**环境规模化的成本侧（构建/维护算力和人力、镜像分发、并发执行资源竞争）——这是工程可行性评估的已知缺口，需要我们自己补 [[2511.09586]]。
+- AgentScaler-30B-A3B 以远小于 1T 的参数量在 tau-bench/tau2-Bench/ACEBench 上逼近或超过 Kimi-K2-1T-A32B 等万亿参数开源模型（ACEBench-en Overall 75.7 vs 77.4），是"环境规模化 + 两阶段训练"能显著提升 function-calling 能力的又一实证；但同样**未披露**环境自动构建流水线的算力/时间成本 [[2509.13311]]。
+
+## 争议与矛盾
+
+（暂无跨来源分歧，仅一篇来源；与 [[verifiable-reward-environment-generation]]、[[agentic-rl-environments]] 是互补而非冲突关系）
+
+## 开放问题
+
+- GEF 三阶段的正交性存疑：动态规模化（课程学习）依赖反馈阶段的评估结果决定下一轮任务难度，论文未明确讨论这种跨阶段耦合如何影响系统设计（[[2511.09586]] 笔记「局限与疑点」）。
+- 环境规模化的成本侧工程数字（冷启动、并发密度、镜像分发）几乎全部缺失，需要逐个方法回到原始仓库调研。
+- ARE 的"环境时钟与 agent 时钟解耦"架构值得深入评估，是否可作为我们调度系统支持异步/事件驱动环境的参考。
+
+## 相关概念
+
+[[agentic-rl]]、[[agentic-rl-environments]]、[[verifiable-reward-environment-generation]]、[[generator-verifier-asymmetry]]、[[repolaunch]]
+
+## 相关来源
+
+- [[2511.09586]] — 提出 GEF loop 三阶段分类法，系统盘点环境规模化方法；SWE-bench 解决率随任务/轨迹规模提升的量化证据是本页核心工程数字来源
+- [[2509.13311]] — 给出"数据库化工具环境"的完整自动化构建 + 三级过滤验证实现，是交互性规模化与自动化反馈两个维度的具体工程样本
