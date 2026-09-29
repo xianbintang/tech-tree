@@ -48,7 +48,7 @@ sources: [2609.27321, 2509.02547, 2511.09586, 2509.13311, 2609.19969, 2609.22000
 
 ## 相关概念
 
-[[vhd-play]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]
+[[vhd-play]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）
 
 ## 相关来源
 
