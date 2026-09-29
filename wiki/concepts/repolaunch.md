@@ -36,7 +36,7 @@ repo-level 可执行环境的构建（拉取仓库、装依赖、跑测试）直
 
 ## 相关概念
 
-[[category-aware-expert-training]]、[[swe-bench-pro]]
+[[category-aware-expert-training]]、[[swe-bench-pro]]、[[agentic-rl-environments]]
 
 ## 相关来源
 
