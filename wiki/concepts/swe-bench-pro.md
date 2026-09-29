@@ -2,8 +2,8 @@
 title: "SWE-bench Pro"
 aliases: [SWE-bench Pro, Pro-618]
 created: 2026-09-25
-updated: 2026-09-25
-sources: [2609.23377]
+updated: 2026-09-29
+sources: [2609.23377, 2609.26777]
 ---
 
 # SWE-bench Pro
@@ -36,8 +36,9 @@ sources: [2609.23377]
 
 ## 相关概念
 
-[[category-aware-expert-training]]、[[swe-bench-multilingual]]、[[repolaunch]]
+[[category-aware-expert-training]]、[[swe-bench-multilingual]]、[[repolaunch]]、[[swe-serve]]
 
 ## 相关来源
 
 - [[2609.23377]] — 使用 Pro-618 子集验证类别感知专家训练 + MOPD 蒸馏的效果
+- [[2609.26777]] — 作为对比基线之一；指出 [[swe-serve]] 的 oracle 补丁规模（中位数 553 行/7 个文件）比 SWE-bench Pro 更大，但平均 prompt 更短
