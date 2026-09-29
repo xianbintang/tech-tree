@@ -116,7 +116,9 @@
    - 每篇一条笔记（`notes/<papers|posts>/<id>.md`，含「与母论文的关系」）；
    - 更新概念页；
    - PR 描述里有本分类的**综述**（工作之间的演进、对应母论文哪些机制、对我们平台的启发）。
-4. 读完的条目会在 issue 里自动打勾。一个 PR 最多 8 篇（`BATCH_MAX`），剩下的顺延到下一个 PR；分类全部读完后，合并最后一个 PR 就会关闭该 issue。
+4. **勾选 = 我要读**（和每日推送 PR 一致）：勾选部分条目，就只读勾选的；一个都不勾，就读全部。
+   读完的条目行尾会标上 `✅ 已读（#PR）`，勾选自动去掉。一个 PR 最多 8 篇（`BATCH_MAX`），剩下的顺延到下一个 PR。
+   勾选的读完后会自动摘掉 `to-read`；整个分类全部读完后，合并最后一个 PR 就会关闭该 issue。
 5. 不想等可以立即跑：`scripts/run-local.sh batch <issue号>`。
 
 非 arXiv 论文（USENIX / ACM / MLSys）会自动下载 PDF 并提取正文（`pipeline/fetch_paper.py`）。ACM 等拦截爬虫的站点改用 Firecrawl 读取。PDF 和全文只放在本地 `.cache/`，不入库。
@@ -222,6 +224,7 @@ read PR「Closes #N」 ── 你 Merge ──▶ issue 自动关闭
 | 现象 | 原因 / 处理 |
 |---|---|
 | 08:00 没有生成 PR | 先看 `.cache/logs/` 里最新的 `*-all.log`；没有日志说明任务没启动：桌面 App 没开，或允许列表里缺少 `scripts/scheduled.sh`（见配置手册第 4 节）。打开侧边栏「Scheduled」→ `tech-tree-daily` 查看；App 关着时错过的任务会在下次启动时补跑 |
+| 手动运行时显示 `waiting for running pipeline …` | 正常：定时任务正在跑，手动命令会排队等它结束再开始（每 30 秒检查一次），不会和它同时改仓库 |
 | 日志里出现 `another run in progress … skipping` | 正常：上一次运行还没结束，本次跳过。锁里记录了进程号，进程不在了会自动清理，一般不用手动处理 |
 | 定时任务会话显示「完成」，但 PR 还没出来 | 正常：定时任务只负责在后台启动脚本，然后就结束；实际进度看 `.cache/logs/` |
 | `working tree has uncommitted KB changes` | 主仓库的 `inbox/ notes/ wiki/ …` 下有未提交的改动。先提交或 stash；自己手改知识库请走分支 + PR |

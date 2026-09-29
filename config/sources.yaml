@@ -58,6 +58,11 @@ posts:
     # ───────── Kimi / Moonshot ─────────
     - {name: Kimi (Moonshot), type: hf_models, org: moonshotai, weight: 4}
 
+    # ───────── Xiaomi MiMo ─────────
+    # 官网无 feed；以 HuggingFace 新模型发布为信号（V2.6 Flash/Pro 的 RL、MOPD 版本等）。
+    # 论文（MiMo-7B、V2-Flash、VL 等）会经 arXiv / HF 每日论文进入推送。
+    - {name: Xiaomi MiMo, type: hf_models, org: XiaomiMiMo, title_filter: '^mimo', weight: 4}
+
     # ───────── Alibaba / Qwen ─────────
     - {name: Qwen, type: hf_models, org: Qwen, weight: 3}
     - name: Alibaba Cloud Blog

@@ -54,7 +54,21 @@ if [ -z "${TT_LOG:-}" ] && [ -n "${1:-}" ]; then
 fi
 
 # One pipeline run at a time. Stale locks (dead pid, or pid-less and >3h old) are cleared.
+#   acquire_lock          scheduled runs: skip if another run holds the lock
+#   acquire_lock --wait   manual runs: wait for it instead
+# Nested calls ("$0" read … inside all/tick) inherit TT_LOCK_HELD and reuse the parent's lock.
 acquire_lock() {
+  [ -n "${TT_LOCK_HELD:-}" ] && return 0
+  if [ "${1:-}" = --wait ]; then
+    until mkdir .cache/lock 2>/dev/null; do
+      local holder; holder=$(cat .cache/lock/pid 2>/dev/null || true)
+      if [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; then rm -rf .cache/lock; continue; fi
+      echo "waiting for running pipeline (pid ${holder:-?}) …"; sleep 30
+    done
+    echo $$ > .cache/lock/pid; export TT_LOCK_HELD=1
+    trap 'rm -rf .cache/lock' EXIT
+    return 0
+  fi
   if ! mkdir .cache/lock 2>/dev/null; then
     local pid; pid=$(cat .cache/lock/pid 2>/dev/null || true)
     if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
@@ -65,7 +79,7 @@ acquire_lock() {
     fi
     echo "clearing stale lock"; rm -rf .cache/lock; mkdir .cache/lock
   fi
-  echo $$ > .cache/lock/pid
+  echo $$ > .cache/lock/pid; export TT_LOCK_HELD=1
   trap 'rm -rf .cache/lock' EXIT
 }
 
@@ -142,6 +156,7 @@ case "${1:-}" in
     ;;
 
   daily)
+    acquire_lock --wait
     day=${2:-$TODAY}
     # A 2nd run on the same day becomes edition "-2" (only items new since the 1st).
     edition=""; n=1
@@ -172,10 +187,12 @@ case "${1:-}" in
     ;;
 
   sync)
+    acquire_lock --wait
     uv run python -m pipeline.inbox_issues --recent-days 14
     ;;
 
   queue)
+    acquire_lock --wait
     # Reading lists: at most one category batch (= one PR) per tick.
     for n in $(gh issue list --state open --label to-read --label reading-list --json number,labels \
                  --jq '[.[] | select([.labels[].name] | index("reading") | not)] | sort_by(.number) | .[:1] | .[].number'); do
@@ -192,6 +209,7 @@ case "${1:-}" in
     ;;
 
   batch)
+    acquire_lock --wait
     issue=${2:?usage: batch <reading-list issue> [max]}
     max=${3:-${BATCH_MAX:-8}}
     claim "$issue" reading
@@ -227,7 +245,8 @@ case "${1:-}" in
     done
     if [ ${#done_ids[@]} -eq 0 ]; then echo "::batch #$issue produced nothing"; false; fi
     uv run python -m pipeline.wiki_lint >/dev/null 2>&1 || true
-    left=$(( $(uv run python -m pipeline.reading_list left "$issue") - ${#done_ids[@]} ))
+    left=$(( $(uv run python -m pipeline.reading_list left "$issue" --scope all) - ${#done_ids[@]} ))
+    queue_left=$(( $(uv run python -m pipeline.reading_list left "$issue" --scope queue) - ${#done_ids[@]} ))
     agent "为阅读清单分类「${category}」（issue #${issue}）这批精读写 PR 描述到 .cache/pr_body.md，并写 3 行以内推送摘要到 .cache/notify.txt。
 素材：.cache/batch_summaries.md（逐篇摘要）、对应的 notes/ 笔记、本次新增或更新的 wiki/concepts/ 页面、母论文笔记（若存在）。
 PR 描述结构：## 综述（一段到三段：这些工作之间的关系与演进、各自对应母论文哪些机制、对我们沙箱/调度平台的启发）；## 逐篇（每篇一行：标题 — 一句话 — 笔记路径）；## 知识库变化（新建/更新的概念页）；## 值得追问（可转成 issue 的问题）。
@@ -238,15 +257,17 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
     release
     echo "$url"
     if [ -z "${NO_PR:-}" ]; then
-      uv run python -m pipeline.reading_list tick "$issue" "${done_ids[@]}"
+      uv run python -m pipeline.reading_list done "$issue" --pr "${url##*/}" "${done_ids[@]}"
       gh issue edit "$issue" --remove-label reading >/dev/null
-      [ "$left" -le 0 ] && gh issue edit "$issue" --remove-label to-read >/dev/null
+      # Stop queueing once what was asked for (ticked items, or everything) is done.
+      if [ "$queue_left" -le 0 ]; then gh issue edit "$issue" --remove-label to-read >/dev/null; fi
       gh issue comment "$issue" --body "📚 本批精读 ${#done_ids[@]} 篇：${url}（剩余 $left 篇）" >/dev/null
     fi
     notify "📚 分类精读完成：${category}（${#done_ids[@]} 篇）" "$url"
     ;;
 
   read)
+    acquire_lock --wait
     target=${2:?usage: read <issue|arXiv-id|URL>}
     if [[ "$target" =~ ^[0-9]+$ ]]; then
       issue=$target
@@ -277,6 +298,7 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
     ;;
 
   topic)
+    acquire_lock --wait
     issue=${2:?usage: topic <issue>}
     claim "$issue" researching
     load_issue "$issue"
@@ -293,6 +315,7 @@ PR 描述结构：## 综述（一段到三段：这些工作之间的关系与�
     ;;
 
   report)
+    acquire_lock --wait
     week=$(TZ=Asia/Shanghai date +%G-W%V)
     start_branch "report/$week"
     uv run python -m pipeline.week_context

@@ -1,0 +1,20 @@
+# 混元 Agent 团队协同学习清单（来源：#44）。
+# 用户从 #44 里选择后，逐类加到这里，再运行：
+#   uv run python -m pipeline.reading_list create config/reading-lists/hunyuan-agent-team.yaml
+# 目标：弄清岗位②（Agent 数据与环境平台）、③（Agent RL 框架）的目标，以及它们对①（沙盒平台）的需求。
+
+name: hunyuan-agent-team
+labels: [reading-list, agent-team]
+
+categories:
+  - key: A
+    title: "全景与综述"
+    description: |
+      先建立全景：agentic RL 的方法、环境与框架全景，以及「环境规模化」这条主线。
+      精读时请特别整理两件事：(1) 岗位②（环境 / 数据平台）与岗位③（RL 框架）各自的职责边界与典型工作流；
+      (2) 文中对执行环境 / 沙盒提出的要求（并发、reset / 快照、可复现、多 OS、验证器、防 reward hacking 等），
+      并与 [[2609.22978]]（DSec）、[[2609.19969]]（V4.1-Flash）的沙箱需求清单对照。
+    items:
+      - {type: paper, id: "2509.02547", title: "The Landscape of Agentic Reinforcement Learning for LLMs: A Survey", url: "https://arxiv.org/abs/2509.02547", why: "agentic RL 全景（TMLR 2026，95 页）：方法、环境、框架的分类法；重点看环境与框架章节"}
+      - {type: paper, id: "2511.09586", title: "Environment Scaling for Interactive Agentic Experience Collection: A Survey", url: "https://arxiv.org/abs/2511.09586", why: "专讲环境规模化：环境构造、交互数据收集，对应岗位②与沙盒平台的接口"}
+      - {type: paper, id: "2509.13311", title: "Towards General Agentic Intelligence via Environment Scaling", url: "https://arxiv.org/abs/2509.13311", why: "用扩充环境提升通用 agent 能力的具体方法：环境怎么批量造、怎么验证"}
