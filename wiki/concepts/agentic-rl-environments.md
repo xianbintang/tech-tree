@@ -2,8 +2,8 @@
 title: "Agentic RL 环境与基准全景"
 aliases: [agentic RL environments, agent RL 训练环境, agentic RL benchmarks]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2509.02547, 2511.09586]
+updated: 2026-09-30
+sources: [2509.02547, 2511.09586, 2504.07164, 2505.20411]
 ---
 
 # Agentic RL 环境与基准全景
@@ -33,22 +33,28 @@ sources: [2509.02547, 2511.09586]
 - **静态 vs 动态是调度设计的关键区分**：绝大多数环境（WebArena、OSWorld 等）状态仅随 agent 动作改变，可视为"请求驱动"资源；Factorio 是明确反例——tick 制世界持续演化，需要常驻后台进程而非"空闲即挂起" [[2509.02547]]。
 - 论文**未披露**各环境的具体冷启动时间、镜像大小、并发密度等我们最关心的工程数字——这是这份全景图的已知缺口，需要逐个环境回到原始仓库调研 [[2509.02547]]。
 - **SWE 方向有量化的规模效应证据**：SWE-Gym-32B（2,438 任务，真实仓库）SWE-bench 解决率 20.6% → R2E-Gym-32B（8,135 任务，程序化合成）34.4% → SWE-Smith-32B（50,137 任务，真实+合成混合）40.2%——任务/轨迹规模每提升一个数量级，下游解决率显著提升，是"环境规模化"论点少有的直接量化支撑 [[2511.09586]]。
+- **R2E-Gym 的具体合成流水线**：不依赖人工 GitHub issue，而是"Docker 化历史 commit（搜索式依赖解析）→ Fail→Pass 测试收集/生成 → 用失败测试+执行 trace 反向翻译（backtranslation）出 issue 描述"，8.1K 任务里合成 issue 训出的模型（27.8% PASS@1）与真实 issue（28.0%）几乎打平，验证了合成数据不损失训练价值 [[2504.07164]]。仓库安装作者自陈"半人工、难以规模化"，且论文**未披露**单任务构建耗时、镜像大小、并发密度这些工程数字——与本页此前指出的"环境全景论文普遍不披露冷启动/镜像成本"这一缺口一致 [[2504.07164]]。
+- **SWE-rebench 把"任务规模化"与"评测防污染"绑在同一条流水线里**：全自动挖掘真实 GitHub issue/PR（约 45 万候选 → 15.34 万过滤后 → 21,336 个可执行任务、3,468 个仓库），比 R2E-Gym 的 8.1K 又高一个数量级；同一套流水线持续产出的新鲜任务（294 个、169 个仓库）被用来维护一个按 issue 创建时间显式标记潜在污染的 leaderboard——实测发现部分模型在 SWE-bench Verified 上的分数相对同一模型在 SWE-rebench 上的分数有系统性虚高（如 DeepSeek-V3-0324: 39.7% vs 21.3%），是"静态基准会过时/被污染"这一问题的直接量化证据 [[2505.20411]]。
 
 ## 争议与矛盾
 
-（暂无跨来源分歧，仅一篇来源）
+（暂无跨来源分歧；四篇来源视角互补，未见结论冲突）
 
 ## 开放问题
 
 - 逐项盘点 OSWorld / AndroidWorld / WindowsAgentArena 这类全 OS 环境的具体隔离方案，评估我们 microVM 沙箱能否覆盖，缺口在哪（follow-up，见 [[2509.02547]] 笔记）。
 - 环境生成/自动化课程（而非人工预先构建）的趋势，见 [[verifiable-reward-environment-generation]]。
-- 深挖 R2E-Gym / SWE-Smith 这类"程序化生成可执行 Docker 环境"的具体合成流水线（如何从 GitHub 仓库自动生成 buildable/testable 环境、规模、故障率），评估能否复用到 [[repolaunch]] 的沙箱镜像构建能力（follow-up，见 [[2511.09586]] 笔记）。
+- ~~深挖 R2E-Gym 这类"程序化生成可执行 Docker 环境"的具体合成流水线~~ → 已在 [[2504.07164]] 笔记中深挖：核心是 commit 反向翻译（backtranslation）+ Docker 搜索式依赖解析，但论文仍未披露构建耗时/镜像大小/并发密度，这部分工程数字缺口依然存在，需要自行实测才能评估能否复用到 [[repolaunch]] 的沙箱镜像构建能力。
+- SWE-Smith 的合成流水线尚未深挖（与 R2E-Gym 同属"程序化生成可执行 Docker 环境"一类，但用真实+合成混合数据），可作为下一个 follow-up。
+- SWE-rebench 同样**未披露**端到端算力/存储成本，且其三维质量分类器准确率不高（Test Patch Correctness 仅 67%），标签噪声对下游训练效果的影响未评估（follow-up，见 [[2505.20411]] 笔记，详细机制见 [[verifiable-reward-environment-generation]] 与 [[benchmark-item-validity-audit]]）。
 
 ## 相关概念
 
-[[agentic-rl]]、[[agentic-rl-frameworks]]、[[verifiable-reward-environment-generation]]、[[repolaunch]]、[[gef-loop]]
+[[agentic-rl]]、[[agentic-rl-frameworks]]、[[verifiable-reward-environment-generation]]、[[repolaunch]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[benchmark-item-validity-audit]]
 
 ## 相关来源
 
 - [[2509.02547]] — Table 10 系统盘点约 43 个开源 Agentic RL 环境/基准
 - [[2511.09586]] — 提供 SWE 方向环境规模化的量化证据（任务/轨迹规模 vs SWE-bench 解决率），并给出 GEF loop 分类法（见 [[gef-loop]]）
+- [[2504.07164]] — 深挖 R2E-Gym 的 commit 反向翻译合成流水线，并提出 hybrid verifier 把 SWE-bench-Verified 从 43% 推到 51%
+- [[2505.20411]] — 全自动挖掘真实 issue/PR 规模化到 21,336 任务，并用同一流水线维护防污染 leaderboard，实证部分模型 SWE-bench Verified 分数虚高

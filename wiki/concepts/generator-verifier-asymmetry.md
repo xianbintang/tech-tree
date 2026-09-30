@@ -2,8 +2,8 @@
 title: "Generator-Verifier Asymmetry"
 aliases: [生成器-验证器不对称, generator-verifier gap]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2511.09586, 2509.13311]
+updated: 2026-09-30
+sources: [2511.09586, 2509.13311, 2504.07164]
 ---
 
 # Generator-Verifier Asymmetry
@@ -19,6 +19,7 @@ sources: [2511.09586, 2509.13311]
 ## 核心机制 / 主要变体
 
 - **易验证域**（数学推理、代码生成）：RLVR（Reinforcement Learning with Verifiable Rewards）范式已取得较大成功，验证可以是确定性的（跑测试用例、检查数值答案）[[2511.09586]]。function-calling 是易验证域的另一个具体样本：AgentScaler（[[2509.13311]]）把每个工具形式化为对数据库 schema 的读写操作，验证直接靠"最终数据库状态是否与 gold 状态一致"（write 型工具）或"工具序列/参数是否精确匹配"（read 型工具）完成，完全不需要 LLM-as-judge 介入 [[2509.13311]]。
+- **易验证域内部也存在二级不对称——"验证的区分度"与"验证的抗偏见能力"之间的权衡**：R2E-Gym（[[2504.07164]]）在 SWE 任务上发现，execution-based verifier（跑生成的测试用例）虽然是确定性验证，但离散的通过测试数在候选打平时**缺乏区分度**（多数问题里 <20% 的生成测试能有效区分对错 patch）；execution-free verifier（学习式模型直接给连续分数）区分度更好，但**容易被 agent 的思考文本等表层特征误导**而非真正依据 patch 本身判断（去掉轨迹只留 patch，性能从 42.8% 降到 37.6%）。两者的 hybrid（执行分数排序 + 学习式分数打破平局）把 SWE-bench-Verified 从单一方法的 42-43% 天花板推到 51%，说明即使在"易验证"域，验证器本身的设计选择（确定性执行 vs 学习式打分）仍需要类似 BRPO/ARE 那样的组合策略，而非默认"能跑测试就够了" [[2504.07164]]。
 - **易生成难验证域**（创意写作、医疗咨询、政策制定）：ground truth 往往缺失，验证需要主观判断，难以达成统一标准。应对方案包括：
   - BRPO 用成对生成式奖励模型（pairwise generative reward model）给出比较性质量分数，规避直接给创造力打分 [[2511.09586]]。
   - ARE 把"参数匹配硬检查"（如校验邮箱 ID 等确定性字段）与"生成式 rubric 软检查"结合，兼顾客观性与覆盖面 [[2511.09586]]。
@@ -39,9 +40,10 @@ sources: [2511.09586, 2509.13311]
 
 ## 相关概念
 
-[[gef-loop]]、[[verifiable-reward-environment-generation]]、[[agentic-rl]]
+[[gef-loop]]、[[verifiable-reward-environment-generation]]、[[agentic-rl]]、[[agentic-rl-environments]]
 
 ## 相关来源
 
 - [[2511.09586]] — Section 5.2 提出 Generator-Verifier Asymmetry 概念，并给出 BRPO、ARE 两个缓解案例
 - [[2509.13311]] — 提供 function-calling 这一易验证域的具体验证实现（数据库状态比对 + 工具序列精确匹配），佐证易验证域可以完全不依赖主观判断
+- [[2504.07164]] — 在 SWE 这一易验证域内部揭示"执行式验证缺乏区分度 vs 学习式验证易被表层特征误导"的二级不对称，并给出 hybrid verifier 缓解方案（42-43% → 51%）
