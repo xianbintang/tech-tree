@@ -2,8 +2,8 @@
 title: "Generation-Execution-Feedback (GEF) Loop"
 aliases: [GEF loop, Generation-Execution-Feedback, 环境规模化, environment scaling]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2511.09586, 2509.13311]
+updated: 2026-09-30
+sources: [2511.09586, 2509.13311, 2412.21139, 2504.21798]
 ---
 
 # Generation-Execution-Feedback (GEF) Loop
@@ -41,7 +41,7 @@ sources: [2511.09586, 2509.13311]
 
 ## 工程要点与数字
 
-- SWE 方向的量化证据：SWE-Gym-32B（2,438 任务、491 轨迹，真实仓库）SWE-bench 解决率 20.6% → R2E-Gym-32B（8,135 任务、3,321 轨迹，程序化合成）34.4% → SWE-Smith-32B（50,137 任务、5,016 轨迹，真实+合成混合）40.2%——任务/轨迹规模每提升一个数量级，下游解决率显著提升 [[2511.09586]]。
+- SWE 方向的量化证据：[[swe-gym]]-32B（2,438 任务、491 轨迹，真实仓库）SWE-bench 解决率 20.6% → R2E-Gym-32B（8,135 任务、3,321 轨迹，程序化合成）34.4% → [[swe-smith]]-32B（50,137 任务、5,016 轨迹，真实+合成混合）40.2%——任务/轨迹规模每提升一个数量级，下游解决率显著提升 [[2511.09586]]。SWE-Gym 一手论文的 ORM 验证器实验是"反馈阶段"自动化维度里少见的、给出推理时扩展量化曲线的完整样本：32B 验证器把 Pass@16 42.8% 的 Best@16 拉到 32.0%，且验证器规模直接影响其 scaling 上限（7B 验证器 k=4 后饱和，32B 到 k=8 仍在涨）[[2412.21139]]。**SWE-Smith 一手论文是"生成阶段"自动化维度目前最完整的样本**：四种自动化 bug 合成策略（LM 改写/AST 程序化变异/PR 逆向/任务组合）各自的产出率、成本、下游训练效果都有量化对比（PR Mirror 9.2% Verified 最优但 $5.53/条最贵，零成本的 Procedural 8.6% 具竞争力）；且执行式质量门槛（"至少破坏 1 个原本通过的测试"）与 SWE-Gym 的验证门槛互为镜像，两者共同构成"生成阶段"零 LLM 判分防作弊的完整闭环样本，细节见 [[swe-smith]] [[2504.21798]]。
 - GAIA 基准上，任务结构从 sequential 到 graph-based、深度从个位数到 30 步，分数随之走高：WebDancer-32B 40.7 → WebExplorer-8B 50.0 → WebShaper-32B 52.4 → WebSailor-32B 53.2（同期工作横向陈列，非严格消融）[[2511.09586]]。
 - SWE 场景里 Docker 是执行沙箱的事实标准，兼顾跨机器一致性与隔离安全 [[2511.09586]]。
 - 论文**未讨论**环境规模化的成本侧（构建/维护算力和人力、镜像分发、并发执行资源竞争）——这是工程可行性评估的已知缺口，需要我们自己补 [[2511.09586]]。
@@ -59,9 +59,11 @@ sources: [2511.09586, 2509.13311]
 
 ## 相关概念
 
-[[agentic-rl]]、[[agentic-rl-environments]]、[[verifiable-reward-environment-generation]]、[[generator-verifier-asymmetry]]、[[repolaunch]]
+[[agentic-rl]]、[[agentic-rl-environments]]、[[verifiable-reward-environment-generation]]、[[generator-verifier-asymmetry]]、[[repolaunch]]、[[swe-gym]]、[[swe-smith]]
 
 ## 相关来源
 
 - [[2511.09586]] — 提出 GEF loop 三阶段分类法，系统盘点环境规模化方法；SWE-bench 解决率随任务/轨迹规模提升的量化证据是本页核心工程数字来源
 - [[2509.13311]] — 给出"数据库化工具环境"的完整自动化构建 + 三级过滤验证实现，是交互性规模化与自动化反馈两个维度的具体工程样本
+- [[2412.21139]] — SWE-Gym 一手论文，给出反馈阶段 ORM 验证器训练与推理时扩展的完整量化曲线（见 [[swe-gym]]）
+- [[2504.21798]] — SWE-Smith 一手论文，给出生成阶段自动化 bug 合成策略的完整成本/效果对比与执行式质量门槛设计（见 [[swe-smith]]）
