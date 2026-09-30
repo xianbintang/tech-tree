@@ -2,8 +2,8 @@
 title: "沙箱镜像分发与按需加载"
 aliases: [on-demand image loading, 按需镜像分发, 可组合镜像层, EROFS, composable environment layers]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2609.22978]
+updated: 2026-09-30
+sources: [2609.22978, 2407.16741]
 ---
 
 # 沙箱镜像分发与按需加载
@@ -34,6 +34,8 @@ sources: [2609.22978]
 - 云 bursting 场景：一个去重后 30TB 的 EROFS 镜像集覆盖了 70% 容器任务的镜像依赖，可整体同步到云端文件系统供 cloud burst 使用 [[2609.22978]]。
 - 相关系统（DSec 论文点名但未展开精读，留待 category E）：Nydus（EROFS 兼容格式 + fscache/FUSE 懒加载）、DADI（块级按需镜像）、FaaSNet（P2P 镜像分发）——DSec 强调自己复用已有 3FS 而非另起 registry+P2P 分发层 [[2609.22978]]。
 
+- **更轻量的前置方案：内容寻址 dual-tag 缓存（OpenHands，2024）**：不拆分层，而是给整个 runtime 镜像打两个 tag——hash tag（Dockerfile + 源码 MD5，内容寻址，命中即直接复用）和 generic tag（`oh_v{version}_{base_image}_tag_{tag}`，代表某个 base image + 版本组合下的最新构建，会被覆盖更新）。构建顺序：hash 精确命中 → 退化用 generic tag 镜像做增量构建 → 都未命中才从 base image 完全重建。本质是"镜像整体内容寻址 + 增量重建"，没有把 base/workspace/toolkit 拆成独立生命周期的层，也没有按需 I/O，规模化能力明显弱于 DSec 的可组合层方案，但工程成本极低，适合作为团队规模较小、镜像组合数不多时的过渡方案 [[2407.16741]]。
+
 ## 争议与矛盾
 
 （暂无跨来源分歧，仅一篇来源；后续读 EROFS、DADI、Nydus、FaaSNet、CoFS 原始论文后补充）
@@ -45,8 +47,9 @@ sources: [2609.22978]
 
 ## 相关概念
 
-[[microvm-sandbox]]、[[sandbox-density-overcommit]]
+[[microvm-sandbox]]、[[sandbox-density-overcommit]]、[[agent-execution-sandbox]]
 
 ## 相关来源
 
 - [[2609.22978]] — DSec：提出可组合环境层 + EROFS/3FS 按需加载，给出量化消融数据
+- [[2407.16741]] — OpenHands：更早、更轻量的 hash+generic 双标签内容寻址缓存方案，规模化能力弱于 DSec 但工程成本低，可作为对照下限

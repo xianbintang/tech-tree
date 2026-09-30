@@ -2,8 +2,8 @@
 title: "Agent Session Sandbox Isolation / 会话级 Agent 沙箱隔离"
 aliases: [session isolation, AgentCore Runtime, per-session microVM, 会话级隔离, agent session isolation, AWS Lambda MicroVMs]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes]
+updated: 2026-09-30
+sources: [brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes, 2407.16741]
 ---
 
 # Agent Session Sandbox Isolation / 会话级 Agent 沙箱隔离
@@ -41,6 +41,7 @@ sources: [brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxe
 ## 开放问题
 
 - 具体隔离/伸缩机制（microVM 如何原地 resize、session 间资源如何调度）未披露 [[brooker-seven-years-of-firecracker]] [[aws-lambda-microvms-agent-sandboxes]]。
+- 更早的开源先例：[[2407.16741]]（OpenHands，2024）已经是"每个任务 session 一个独立执行环境"的模式，但隔离层是 Docker 容器而非 microVM，且论文完全没有讨论 idle-suspend/resume、原地扩容这类生命周期管理能力——说明"per-session 隔离"这个粒度选择在开源社区早于 AWS 产品化，但生命周期精细管理（挂起/恢复/伸缩）是后来才成为工程重点的部分，值得关注这条演进线索。
 - 与 DSec（[[2609.22978]]）自己的沙箱生命周期模型（§2.3 统一 SDK 生命周期、§6.3 抢占式挂起/恢复）相比：DSec 的 pause/resume 机制（快照+终止进程 / 恢复快照+新进程）与 Lambda MicroVMs 的 idle-suspend/resume 在机制上高度相似，但触发方式不同——DSec 由 RL 框架在 GPU 抢占时**主动显式**触发，Lambda MicroVMs 是平台**空闲超时自动**触发；DSec 全文未发现类似"session 中途原地垂直扩容 4x"的能力描述，这是 Lambda MicroVMs 相对 DSec 目前公开设计的一个能力差异点，详见 [[aws-lambda-microvms-agent-sandboxes]]「与母论文的关系」。
 - Lambda MicroVMs 从快照启动的产品说明完全未提及克隆/快照恢复后的唯一性问题（对照 [[microvm-snapshot-uniqueness]]、[[2102.12892]]）——是平台层已处理还是文档简化略过，未确认 [[aws-lambda-microvms-agent-sandboxes]]。
 
@@ -52,3 +53,4 @@ sources: [brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxe
 
 - [[brooker-seven-years-of-firecracker]] — 描述 Amazon Bedrock AgentCore Runtime 采用每 agent session 一个独立 microVM 的隔离模型
 - [[aws-lambda-microvms-agent-sandboxes]] — AgentCore per-session microVM 模型的产品化：AWS Lambda MicroVMs，开放给第三方编排系统对接，新增 4x 原地垂直扩容、idle policy 挂起/恢复、凭据引用传递等具体工程细节
+- [[2407.16741]] — OpenHands：更早的开源先例，每任务 session 一个 Docker 容器沙箱，但未涉及挂起/恢复、原地伸缩等生命周期管理

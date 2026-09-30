@@ -1,9 +1,9 @@
 ---
 title: "Agent 执行沙箱（Execution Sandbox）"
-aliases: [execution sandbox, agent sandbox, nono, E2B, Anthropic sandbox-runtime, agent 执行隔离]
+aliases: [execution sandbox, agent sandbox, nono, E2B, Anthropic sandbox-runtime, agent 执行隔离, OpenHands Docker sandbox]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.29647]
+updated: 2026-09-30
+sources: [2609.29647, 2407.16741]
 ---
 
 # Agent 执行沙箱（Execution Sandbox）
@@ -22,6 +22,7 @@ sources: [2609.29647]
 - **E2B**：云侧隔离执行环境，提供 Python/JS SDK。GitHub ~12.2K star（截至 2026-05）。[[2609.29647]]
 - **Anthropic sandbox-runtime**：在不使用容器运行时的前提下，做 OS 级文件系统 + 网络限制（process-level）。GitHub ~4.1K star（截至 2026-05）。[[2609.29647]]
 - **共同特征（[[2609.29647]] 的定性判断）**：隔离粒度是**二元的**——在沙箱内 vs. 沙箱外，一次性配置，执行期间不随身份/输入 provenance/记忆污点动态调整。
+- **OpenHands Docker sandbox（早期开源实现范例，2024）**：每个任务 session 启动一个独立 Docker 容器，容器内跑一个 REST API server（"Action Execution API"）维护 bash shell、Jupyter IPython server、基于 Playwright 的 Chromium 浏览器三类子环境；agent 框架通过 RESTful API 发送 action、接收 observation，支持任意用户提供的 base 镜像（构建时把 runtime client 代码注入其中）。隔离粒度同样是容器级二元隔离，不涉及身份/污点动态收敛，但验证了"一个 REST API 统一封装 bash/IPython/browser 三类执行环境"这一接口设计的可行性，详见 [[codeact-action-space]] [[2407.16741]]。
 
 ## 工程要点与数字
 
@@ -39,8 +40,9 @@ sources: [2609.29647]
 
 ## 相关概念
 
-[[agent-os-kernel]]
+[[agent-os-kernel]]、[[codeact-action-space]]、[[sandbox-image-distribution]]
 
 ## 相关来源
 
 - [[2609.29647]] — 在 §6.1.4 把 nono/E2B/Anthropic sandbox-runtime 作为"执行沙箱"这一 harness 层级的代表系统给出简要对照，并论证 AgentKernel 的 Execution 支柱在此基础上补充了语义层动态权限收敛
+- [[2407.16741]] — OpenHands：早期开源的容器级执行沙箱实现，REST API 统一封装 bash/IPython/browser 三类子环境
