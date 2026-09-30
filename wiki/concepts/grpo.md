@@ -2,8 +2,8 @@
 title: "GRPO"
 aliases: [Group Relative Policy Optimization, 组相对策略优化, group-relative advantage]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, 2609.32577]
 ---
 
 # GRPO
@@ -23,6 +23,7 @@ GRPO 是当前 reasoning RL（DeepSeek-R1、Kimi k1.5 等）事实上的默认�
 - **重要性比值 $\rho$**：PPO 式目标里用 $\rho_{i,t}^{(g)}(\theta) = \pi_\theta(y_{i,t}^{(g)}|\dots)/\pi_{\theta_{old}}(y_{i,t}^{(g)}|\dots)$ 衡量当前策略与生成该轨迹时的策略之间的差异；$\rho=1$ 即完全 on-policy，$\rho\ne1$ 意味着数据存在策略滞后（policy lag），是 [[async-rl-training]] 需要 staleness 修正的根源 [[2609.25463]]。
 - **DAPO 动态采样**：面对退化组问题的参考做法——过采样 prompt，丢弃退化组，持续采样直到批次里凑够足够的非退化组；正确但随着策略变强（$p$ 向两端移动）rollout 成本会持续增长，这正是 [[rollout-efficiency]] 里 Rollout Selection 与 Prompt Filtering 两个算法杠杆家族存在的直接动机 [[2609.25463]]。
 - **放宽 lag 容忍度的变体**：VCPO 通过按有效样本量缩放学习率，报告 lag 到 128 步仍稳定；$\mu$-GRPO 用放松的 clipping 和负 advantage veto 容忍多阶段 staleness；FlashREINFORCE、SAO 直接去掉组结构，改用单条 rollout + batch-mean 或 value-model baseline [[2609.25463]]。
+- **同组内通过轨迹的质量再分层**：标准 GRPO 给同组所有测试通过的轨迹相同 advantage，忽略实现质量差异；[[groupwise-agentic-grading]] 在此基础上加一层 agentic 质量打分，把组内通过轨迹按质量降权再做保和重缩放，在不破坏组内正负 advantage 平衡的前提下引入质量信号 [[2609.32577]]。
 
 ## 工程要点与数字
 
@@ -39,8 +40,9 @@ GRPO 是当前 reasoning RL（DeepSeek-R1、Kimi k1.5 等）事实上的默认�
 
 ## 相关概念
 
-[[rollout-efficiency]]、[[async-rl-training]]
+[[rollout-efficiency]]、[[async-rl-training]]、[[groupwise-agentic-grading]]
 
 ## 相关来源
 
 - [[2609.25463]] — 详细推导退化组概率公式，并把它作为算法杠杆两大技术家族（rollout selection、prompt filtering）存在的根本动机
+- [[2609.32577]] — 在 GRPO 组结构上引入 agentic 质量打分与 sum-preserving advantage 重分配，解决"同组通过轨迹质量不可区分"的问题
