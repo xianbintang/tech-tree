@@ -2,8 +2,8 @@
 title: "沙箱高密度资源超卖"
 aliases: [sandbox density, high-density sandbox execution, container overcommit, sub-NUMA partitioning, latency-sensitive execution class, high-density resource management, CPU/memory overcommit, QoS-aware CPU scheduling, 内存共享与回收, core scheduling]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978]
+updated: 2026-09-30
+sources: [2609.19969, 2609.22978, agentenv-docs]
 ---
 
 # 沙箱高密度资源超卖
@@ -23,6 +23,7 @@ sources: [2609.19969, 2609.22978]
 - **内存问题的两个来源（microVM 尤其严重）**：(1) 镜像数据经虚拟块设备读取时，host 和 guest 各缓存一份，造成跨边界重复缓存；(2) guest 内空闲页默认不会主动还给 host。由于沙箱生存期长（p99 超 3 小时）、请求内存常超实际需求，guest 内部缺乏回收压力，这些问题被长生命周期放大 [[2609.22978]]，详见 [[microvm-sandbox]]。
 - **virtio-pmem + DAX**：把文件访问直接映射到 host 页而不拷入 guest RAM，让多个 co-located microVM 共享同一份 host 页缓存，从根上消除重复缓存问题；代价是冷访问需要同步缺页处理（不像 virtio-blk 能享受 guest 侧 readahead 和批量 I/O），且 guest 要为整个 pmem 地址范围分配 `struct page` 元数据（128GB pmem 设备占 2GB guest RAM）[[2609.22978]]。
 - **DAMON + virtio-balloon free-page reporting**：对不适合走 pmem 的可写盘，用 DAMON（Linux 采样式内存访问监测框架）识别超过年龄阈值未被访问的冷页并主动回收，回收后的零散页被 buddy allocator 聚合成高阶块，满足 free-page reporting 默认要求的 2MiB（order-9）粒度门槛，再由 virtio-balloon 上报给 host、host 用 `madvise(MADV_DONTNEED)` 释放 [[2609.22978]]。
+- **另一个生产系统的印证**：[[agentenv-docs]]（AgentENV，Kimi K3 沙箱运行时）同样用 memory ballooning "把可回收的 guest 内存还给 host"，作为"环境运行越久、状态越分化，密度也能维持"的核心机制之一，README 给出具体生产超卖比 **9.6x**（但文档首页 Overview 同一功能点只写"sustaining high overcommit"未给数字，两处表述不一致，见「争议与矛盾」）[[agentenv-docs]]。AgentENV 同时用**同快照多沙箱共享只读内存 ublk 设备（引用计数）**的方式让 Linux page cache 跨沙箱复用，是 DSec virtio-pmem+DAX 思路之外的另一种"消除重复缓存"实现——用软件层的设备共享代替硬件辅助的 DAX 映射 [[agentenv-docs]]。
 - **延迟敏感（LS）/ Best-Effort（BE）两层 CPU QoS**：高密度部署会通过后台负载干扰时间敏感的评测。DSec 因此引入 LS 执行类：对非 LS/BE 任务应用 `SCHED_IDLE` 把调度优先级压到最低（只在 LS 无事可做时才抢 CPU）；但光靠调度优先级防不住同一物理核内 SMT 兄弟线程的干扰，于是叠加 Linux core scheduling（`prctl(PR_SCHED_CORE)` 按 QoS class 分组，禁止不相关 BE 任务跑在 LS 任务的兄弟硬件线程上），从而消除超线程间的干扰 [[2609.19969]] [[2609.22978]]。
 
 ## 工程要点与数字
@@ -36,6 +37,7 @@ sources: [2609.19969, 2609.22978]
 
 ## 争议与矛盾
 
+- **AgentENV 自身两处文档对"内存超卖"的表述不一致**：GitHub README（含"Preserve performance and density over time"一节）给出具体数字 9.6x 生产超卖比；同版本 mdBook 文档首页 Overview 对应段落只说"sustaining high overcommit as environments run longer and diverge"，不给数字——两处明显是同一段文案的不同修订版本，抓取时（2026-09-30）未找到版本号对应说明，引用 9.6x 时需注明来源是 README 而非文档站 [[agentenv-docs]]。
 - 两份材料给出的"单节点密度"数字口径不同：sub-NUMA 分区 A/B 对比得到的"1,000→2,500+"是同一负载配置下优化前后的对比，而"单节点最多 800 microVM 或 3,200 容器"是生产环境里不同 sandbox 后端（microVM vs 容器）各自的通用上限——两者不能直接比较，不构成真正的结论冲突，但并列阅读时容易误判为矛盾数据，故在此明确标注差异来源 [[2609.19969]] [[2609.22978]]。
 
 ## 开放问题
@@ -53,3 +55,4 @@ sources: [2609.19969, 2609.22978]
 
 - [[2609.19969]] — 给出 sub-NUMA 分区带来的具体密度提升数字（1,000→2,500+）与 LS 执行类机制
 - [[2609.22978]] — DSec：virtio-pmem+DAMON 内存优化、SCHED_IDLE+core scheduling CPU QoS 的设计与量化消融
+- [[agentenv-docs]] — AgentENV：memory ballooning + 快照内存设备共享的独立生产印证，给出 9.6x 超卖比声明（无测试方法说明）

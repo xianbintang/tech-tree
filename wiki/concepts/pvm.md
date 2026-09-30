@@ -2,8 +2,8 @@
 title: "PVM"
 aliases: [PVM hypervisor, 影子页表嵌套虚拟化, Alibaba/Ant nested virtualization]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2023-huang-pvm]
+updated: 2026-09-30
+sources: [2023-huang-pvm, agentenv-docs]
 ---
 
 # PVM
@@ -35,9 +35,14 @@ PVM 代表[[microvm-sandbox|安全容器]]隔离谱系里一个和 [[firecracker
 
 暂无跨来源数字冲突。但存在一个**方法论上的疑点**（论文自身分析不充分，值得记录）：Fig 10 中 NST-prefault/NST-pcid/NST-lock 三个 ablation 列的具体含义（"仅应用该优化"还是"移除该优化"）论文未明确说明，导致"哪项优化贡献最大"这个结论的数字依据不够扎实 [[2023-huang-pvm]]。
 
+## 工程要点与数字（补充：生产落地）
+
+- **已有可用的开源实现**：上游内核 fork `virt-pvm/linux`（`pvm-612` 分支，基于 Linux 6.12.33）+ `kvcache-ai/linux` 发布的预编译 host 内核包（DEB/RPM，release tag `pvm-kernel-6.12.33`），host 端 `CONFIG_KVM_PVM=m`、guest 端 `CONFIG_PVM_GUEST` [[agentenv-docs]]。
+- **已被生产系统采用**：[[agentenv-docs]]（Kimi K3 的 agentic RL 沙箱运行时 AgentENV）把 PVM 作为"宿主机无标准 `/dev/kvm`（常见于云 VM，嵌套虚拟化未开放）时的兜底虚拟化模式"，装好 PVM 内核后上层依然通过标准 `/dev/kvm` 接口创建 Firecracker microVM，业务代码无感知切换 [[agentenv-docs]]。这是本页此前"开放问题"里"PVM 是否已开源"的直接答案。
+- 该实现被文档自身标注为 **EXPERIMENTAL**："尚未合并进主线 Linux 内核，fork 出来的内核可能得不到主线同等程度的测试和安全更新"；一个节点只能二选一运行 `kvm` 或 `pvm` 模式，两种模式下捕获的快照/暂停沙箱互不兼容、互相拒绝恢复 [[agentenv-docs]]。
+
 ## 开放问题
 
-- PVM 是否已开源、是否有开源实现或后续论文可供复现，笔记写作时未找到公开代码仓库。
 - fork/mmap 密集型工作负载（频繁产生大量 *L₂* 缺页）下的实际开销，论文承认是短板但未评测；这恰好是很多 agent 工作负载（跑测试、编译、起子进程）的典型特征，需要用真实 agent workload 验证。
 - 双影子页表（*L₂* 用户/内核分别维护）的写保护（WP）同步开销，论文列为未解决的 future work，尚无具体数字。
 - PVM 与 [[microvm-sandbox]]、[[kata-containers]] 等路线在同等密度/并发目标下的直接对比（同一评测环境、同一工作负载）尚无数据，两条路线目前只能分别看各自论文的生产数字，不能直接比较。
@@ -49,3 +54,4 @@ PVM 代表[[microvm-sandbox|安全容器]]隔离谱系里一个和 [[firecracker
 ## 相关来源
 
 - [[2023-huang-pvm]] — PVM 原始设计论文（SOSP '23），去特权化 switcher 与 PVM-on-EPT 影子页表设计、微基准/系统基准/真实应用评测、阿里云生产数字的出处
+- [[agentenv-docs]] — AgentENV（Kimi K3 agentic RL 沙箱运行时）文档，确认 PVM 已有开源内核实现（`virt-pvm/linux` + `kvcache-ai/linux`）并被其作为无 `/dev/kvm` 场景的实验性兜底虚拟化模式采用
