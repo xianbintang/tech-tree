@@ -2,8 +2,8 @@
 title: "Generator-Verifier Asymmetry"
 aliases: [生成器-验证器不对称, generator-verifier gap]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2511.09586, 2509.13311]
+updated: 2026-09-30
+sources: [2511.09586, 2509.13311, 2505.24760]
 ---
 
 # Generator-Verifier Asymmetry
@@ -18,7 +18,7 @@ sources: [2511.09586, 2509.13311]
 
 ## 核心机制 / 主要变体
 
-- **易验证域**（数学推理、代码生成）：RLVR（Reinforcement Learning with Verifiable Rewards）范式已取得较大成功，验证可以是确定性的（跑测试用例、检查数值答案）[[2511.09586]]。function-calling 是易验证域的另一个具体样本：AgentScaler（[[2509.13311]]）把每个工具形式化为对数据库 schema 的读写操作，验证直接靠"最终数据库状态是否与 gold 状态一致"（write 型工具）或"工具序列/参数是否精确匹配"（read 型工具）完成，完全不需要 LLM-as-judge 介入 [[2509.13311]]。
+- **易验证域**（数学推理、代码生成）：RLVR（Reinforcement Learning with Verifiable Rewards）范式已取得较大成功，验证可以是确定性的（跑测试用例、检查数值答案）[[2511.09586]]。function-calling 是易验证域的另一个具体样本：AgentScaler（[[2509.13311]]）把每个工具形式化为对数据库 schema 的读写操作，验证直接靠"最终数据库状态是否与 gold 状态一致"（write 型工具）或"工具序列/参数是否精确匹配"（read 型工具）完成，完全不需要 LLM-as-judge 介入 [[2509.13311]]。[[reasoning-gym]] 是易验证域里"生成也便宜"的极端案例：100+ 个算数/代数/逻辑/图论生成器本身就是程序化算法，生成和验证都是纯函数调用，不存在生成器与验证器之间的成本不对称——这与需要人工设计任务再额外校验的其它易验证域案例（如需要人工编写测试用例的代码任务）形成对照，说明"易验证"域内部本身还能再细分出"生成也自动化"与"生成仍需人工"两档 [[2505.24760]]。
 - **易生成难验证域**（创意写作、医疗咨询、政策制定）：ground truth 往往缺失，验证需要主观判断，难以达成统一标准。应对方案包括：
   - BRPO 用成对生成式奖励模型（pairwise generative reward model）给出比较性质量分数，规避直接给创造力打分 [[2511.09586]]。
   - ARE 把"参数匹配硬检查"（如校验邮箱 ID 等确定性字段）与"生成式 rubric 软检查"结合，兼顾客观性与覆盖面 [[2511.09586]]。
@@ -39,9 +39,10 @@ sources: [2511.09586, 2509.13311]
 
 ## 相关概念
 
-[[gef-loop]]、[[verifiable-reward-environment-generation]]、[[agentic-rl]]
+[[gef-loop]]、[[verifiable-reward-environment-generation]]、[[agentic-rl]]、[[reasoning-gym]]
 
 ## 相关来源
 
 - [[2511.09586]] — Section 5.2 提出 Generator-Verifier Asymmetry 概念，并给出 BRPO、ARE 两个缓解案例
 - [[2509.13311]] — 提供 function-calling 这一易验证域的具体验证实现（数据库状态比对 + 工具序列精确匹配），佐证易验证域可以完全不依赖主观判断
+- [[2505.24760]] — 提供"生成也便宜"的易验证域极端案例（Reasoning Gym）：程序化生成器本身即是算法，生成和验证都是无副作用纯函数调用
