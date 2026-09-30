@@ -2,8 +2,8 @@
 title: "沙箱高密度资源超卖"
 aliases: [sandbox density, high-density sandbox execution, container overcommit, sub-NUMA partitioning, latency-sensitive execution class, high-density resource management, CPU/memory overcommit, QoS-aware CPU scheduling, 内存共享与回收, core scheduling]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978]
+updated: 2026-09-30
+sources: [2609.19969, 2609.22978, 2507.20534]
 ---
 
 # 沙箱高密度资源超卖
@@ -32,6 +32,7 @@ sources: [2609.19969, 2609.22978]
 - CPU QoS 消融（Figure 13，chess 延迟敏感任务 + 10%–50% BE 负载对照）：无保护基线在 50% BE 负载下每步延迟膨胀 **45.2%**；单独 `SCHED_IDLE` 只改善到 41.8%（改善幅度仅 3.4pp，因为 SMT 兄弟线程仍会争抢共享执行资源）；叠加 core scheduling 把膨胀压到 **17.3%**，且改善幅度随 BE 负载增大而增大 [[2609.22978]]。
 - 残余干扰来源：turbo 频率因高负载多核而降频、LLC/内存带宽争用——作者认为这部分残余延迟已可接受，**没有**再上内存带宽隔离机制 [[2609.22978]]。
 - 生产密度参照：稳定运行 3,200 容器 / 800 microVM 每节点（demonstrated operating point，非硬上限）[[2609.22978]]，详见 [[microvm-sandbox]]。
+- **同类团队对标（F 对标）**：Kimi K2 对其 SWE agentic 数据合成用的沙箱基础设施只有一句话披露——"由 Kubernetes 支撑可扩展性与安全性，支持 1 万+ 并发沙箱实例，性能稳定"，是**集群总并发数**而非节点密度，且没有配套的单节点容量、隔离机制、内存/CPU 超卖策略、失败恢复设计等任何工程细节 [[2507.20534]]。与 DeepSeek 的 DSec 论文（独立成文、给出 sub-NUMA 分区+内存超卖+CPU QoS 的完整消融数字）相比，披露深度差距悬殊——头条并发数（1 万+ vs 千级/节点）不可直接比较量级，因为统计口径（集群 vs 单节点）本身不同。
 - Agent 交互过程中沙箱经常在等待 LLM 生成下一步动作，CPU 使用天然稀疏，适合超卖；但内存足迹、guest page cache、host page cache、可写状态可能在 CPU 空闲后仍长期占用，因此高密度超卖下内存共享与回收和 CPU 调度同样重要 [[2609.22978]]。
 
 ## 争议与矛盾
@@ -44,6 +45,7 @@ sources: [2609.19969, 2609.22978]
 - LS 执行类的判定标准（哪些任务算"延迟敏感"）由谁在什么时机设置，机制细节未披露。
 - virtio-pmem 引入的 CPU 开销上升（26.5%→41.4%）在什么规模/负载下会反过来成为瓶颈，论文没有给出临界点分析。
 - core scheduling 之外，内存带宽/LLC 隔离是否值得投入，DSec 判断"已可接受"但没有量化不同 BE 负载强度下 LLC 争用对 LS 任务的具体贡献占比。
+- Kimi K2 的"1 万+ 并发沙箱"是否有量化的密度/隔离工程支撑，还是纯粹的 K8s 默认调度 + 硬件堆量，公开材料完全没有回答，需要靠社区分析或后续论文补充 [[2507.20534]]。
 
 ## 相关概念
 
@@ -53,3 +55,4 @@ sources: [2609.19969, 2609.22978]
 
 - [[2609.19969]] — 给出 sub-NUMA 分区带来的具体密度提升数字（1,000→2,500+）与 LS 执行类机制
 - [[2609.22978]] — DSec：virtio-pmem+DAMON 内存优化、SCHED_IDLE+core scheduling CPU QoS 的设计与量化消融
+- [[2507.20534]] — 对照组：同类团队（Kimi）对沙箱基础设施的披露仅一句话（K8s、1 万+ 并发），无节点密度/隔离/超卖工程细节，与 DSec 形成披露深度的直接对比

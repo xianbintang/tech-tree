@@ -2,8 +2,8 @@
 title: "PVM"
 aliases: [PVM hypervisor, 影子页表嵌套虚拟化, Alibaba/Ant nested virtualization]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2023-huang-pvm]
+updated: 2026-09-30
+sources: [2023-huang-pvm, agentenv-docs]
 ---
 
 # PVM
@@ -22,6 +22,7 @@ PVM 代表[[microvm-sandbox|安全容器]]隔离谱系里一个和 [[firecracker
 - **PVM-on-EPT 影子页表**：*L₂* 的内存虚拟化完全收敛在 *L₁* 内部处理，*L₀* 只需要像对待普通 VM 一样维护一层 EPT，对 PVM 的存在无感知、不用改宿主代码。配套三项优化：prefault（内核更新只读 GPT 后主动预取更新影子页表）、PCID 映射（给 *L₂* 用户/内核分配独立 PCID 避免粗粒度 TLB flush）、细粒度 SPT 锁（拆分全局 mmu_lock 为三类更细粒度的锁）[[2023-huang-pvm]]。
 - **核心洞察是"降低单次 world switch 成本"而非"减少切换次数"**：PVM-on-EPT 相比业界标准 EPT-on-EPT 只少 2 次 world switch（2n+4 vs 2n+6），但把每次切换的成本从 1.3μs 压到 0.179μs（十倍量级），因为切换收敛在同一特权环境内、不经过硬件 root/non-root 模式切换 [[2023-huang-pvm]]。
 - **安全模型**：secure container 只需约十几个 hypercall 接口即可与 *L₁* host 内核交互（vs 默认 seccomp 下 250+ 系统调用），且攻击者需要先后攻破 *L₂* 内核与 *L₁* hypervisor 才能触及 *L₁* host 内核；PVM 让 *L₀* 保持"瘦"，不需要为嵌套虚拟化做特殊处理，进一步收窄云厂商侧攻击面 [[2023-huang-pvm]]。
+- **已出现开源部署路径**：沙箱运行时 AgentENV 提供独立的 PVM 部署文档，明确引用本页原始论文（ACM DOI 10.1145/3600006.3613158），host 侧安装 `kvcache-ai/linux` 发布的 PVM 能力内核（`pvm-kernel-6.12.33` 系列），guest 侧用 `virt-pvm/linux` 的 `pvm-612` 分支（Linux 6.12.33），加载 PVM 模块后 AgentENV 仍通过 `/dev/kvm` 创建 Firecracker microVM。AgentENV 文档把这条路径标注为**实验性**，且未说明其内核 fork 与本页 2023 论文原始实现的具体关系（同一团队延续维护，还是社区独立复刻）[[agentenv-docs]]。
 
 ## 工程要点与数字
 
@@ -37,7 +38,7 @@ PVM 代表[[microvm-sandbox|安全容器]]隔离谱系里一个和 [[firecracker
 
 ## 开放问题
 
-- PVM 是否已开源、是否有开源实现或后续论文可供复现，笔记写作时未找到公开代码仓库。
+- ~~PVM 是否已开源~~：AgentENV 项目给出了一条具体的开源部署路径（host/guest PVM 内核均有发布仓库），部分回答了这个问题；但尚未确认 `kvcache-ai/linux`/`virt-pvm/linux` 这两个内核 fork 是否就是本页论文作者团队（阿里巴巴/蚂蚁）的官方延续，还是第三方基于论文思路的独立实现，也未找到 AgentENV 场景下的量化性能数字（论文里的 world-switch 延迟、Kbuild/SPECjbb 数字是否在这套开源实现上复现）[[agentenv-docs]]。
 - fork/mmap 密集型工作负载（频繁产生大量 *L₂* 缺页）下的实际开销，论文承认是短板但未评测；这恰好是很多 agent 工作负载（跑测试、编译、起子进程）的典型特征，需要用真实 agent workload 验证。
 - 双影子页表（*L₂* 用户/内核分别维护）的写保护（WP）同步开销，论文列为未解决的 future work，尚无具体数字。
 - PVM 与 [[microvm-sandbox]]、[[kata-containers]] 等路线在同等密度/并发目标下的直接对比（同一评测环境、同一工作负载）尚无数据，两条路线目前只能分别看各自论文的生产数字，不能直接比较。
@@ -49,3 +50,4 @@ PVM 代表[[microvm-sandbox|安全容器]]隔离谱系里一个和 [[firecracker
 ## 相关来源
 
 - [[2023-huang-pvm]] — PVM 原始设计论文（SOSP '23），去特权化 switcher 与 PVM-on-EPT 影子页表设计、微基准/系统基准/真实应用评测、阿里云生产数字的出处
+- [[agentenv-docs]] — AgentENV 沙箱运行时文档，给出 PVM 的开源部署路径（host/guest 内核发布仓库），部分回答了本页此前"是否有开源实现"的开放问题

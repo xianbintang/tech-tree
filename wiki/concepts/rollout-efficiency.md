@@ -2,8 +2,8 @@
 title: "Rollout Efficiency（Rollout 效率）"
 aliases: [rollout efficiency, rollout-efficiency taxonomy, rollout 成本优化]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, 2507.20534]
 ---
 
 # Rollout Efficiency（Rollout 效率）
@@ -41,6 +41,7 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 - 系统杠杆代表数字：AReaL（1.5B–32B）吞吐 2.77×；LlamaRL（405B）单步 10.7×；RollPacker 端到端 2.03–2.56×；DeepScaleR 用递增 context（8K→16K→24K）把训练算力从估算 70000 A100-小时压到约 3800；ESPO 提前停止减少 rollout token >20% 且提升准确率 [[2609.25463]]。
 - 算法杠杆代表数字：GRESO rollout 提速 2.4×、最多减少 3.35× rollout，质量持平；POPO 用 replay 达到过采样基线效果只需约 30% rollout 预算；KGPS 显式建模非平稳性，比动态采样减少 83% rollout [[2609.25463]]。
 - **80 个方法里 50 个只报系统收益、17 个只报算法收益、12 个两者都报**——报告口径高度不对称，跨论文的加速比经常不可比（baseline 选择、阶段边界、吞吐单位、聚合统计量、硬件规格五个来源叠加）[[2609.25463]]。
+- Kimi K2 是"Partial & Early-Stop Rollout"机制在生产环境的一个具体例证：长尾未完成轨迹被暂停、下一轮 RL 迭代继续，避免拖慢整体 rollout；该技术在 K1.5 里就已提出，K2 是万亿参数规模下的复用验证，但论文**没有给出**partial rollout 带来的吞吐提升数字或暂停恢复的开销，无法并入上面的加速比对比 [[2507.20534]]。
 - 论文建议的统一比较口径：把两个杠杆都换算成"加速器小时 → 目标质量 $C(q)$ 曲线"，并配五个诊断协议（同等丢弃比例随机对照、增量 ladder、投机接受率随策略漂移曲线、staleness 扫描、匹配 cost 而非匹配 step 数）[[2609.25463]]。
 
 ## 争议与矛盾
@@ -55,8 +56,9 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 
 ## 相关概念
 
-[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]
+[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]、[[agentic-rollout-preemption]]、[[checkpoint-engine]]
 
 ## 相关来源
 
 - [[2609.25463]] — 80 方法双重分类综述（机制×瓶颈），提出统一评估口径与可组合性分析，是本页大部分结论的唯一来源
+- [[2507.20534]] — Partial rollout 技术在万亿参数生产模型上的复用实例（无量化收益数字）

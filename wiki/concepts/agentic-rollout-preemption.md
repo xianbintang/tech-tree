@@ -44,7 +44,7 @@ sources: [2609.19969, 2609.22978]
 
 ## 相关概念
 
-[[sandbox-density-overcommit]]、[[microvm-sandbox]]
+[[sandbox-density-overcommit]]、[[microvm-sandbox]]、[[checkpoint-engine]]
 
 ## 相关来源
 
