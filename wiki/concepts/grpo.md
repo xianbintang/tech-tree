@@ -2,8 +2,8 @@
 title: "GRPO"
 aliases: [Group Relative Policy Optimization, 组相对策略优化, group-relative advantage]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, 2506.03569]
 ---
 
 # GRPO
@@ -23,6 +23,8 @@ GRPO 是当前 reasoning RL（DeepSeek-R1、Kimi k1.5 等）事实上的默认�
 - **重要性比值 $\rho$**：PPO 式目标里用 $\rho_{i,t}^{(g)}(\theta) = \pi_\theta(y_{i,t}^{(g)}|\dots)/\pi_{\theta_{old}}(y_{i,t}^{(g)}|\dots)$ 衡量当前策略与生成该轨迹时的策略之间的差异；$\rho=1$ 即完全 on-policy，$\rho\ne1$ 意味着数据存在策略滞后（policy lag），是 [[async-rl-training]] 需要 staleness 修正的根源 [[2609.25463]]。
 - **DAPO 动态采样**：面对退化组问题的参考做法——过采样 prompt，丢弃退化组，持续采样直到批次里凑够足够的非退化组；正确但随着策略变强（$p$ 向两端移动）rollout 成本会持续增长，这正是 [[rollout-efficiency]] 里 Rollout Selection 与 Prompt Filtering 两个算法杠杆家族存在的直接动机 [[2609.25463]]。
 - **放宽 lag 容忍度的变体**：VCPO 通过按有效样本量缩放学习率，报告 lag 到 128 步仍稳定；$\mu$-GRPO 用放松的 clipping 和负 advantage veto 容忍多阶段 staleness；FlashREINFORCE、SAO 直接去掉组结构，改用单条 rollout + batch-mean 或 value-model baseline [[2609.25463]]。
+- **纯 on-policy 变体（MiMo-VL 的方案）**：反方向的取舍——不放宽 staleness 容忍度，而是彻底消灭 staleness。每次 rollout 后立刻做 single-step 策略更新，由于新旧策略恒等（$\rho\equiv1$），可以直接去掉 PPO 式 clipped surrogate 目标；同时叠加去 KL loss、动态采样、easy-data 过滤、重采样等稳定性技巧。代价是要求 rollout 与训练严格同步，无法像 VCPO/$\mu$-GRPO 那样在 [[async-rl-training]] 架构里容忍多步 policy lag [[2506.03569]]。
+- **on-policy 与 vanilla GRPO 的规模化曲线差异（MiMo-VL 的实证）**：纯文本推理任务上，on-policy 变体性能随训练数据量持续正相关提升，观测窗口内未见饱和；vanilla GRPO 早期样本效率更高，但约 2 万条训练样本后性能饱和，继续训练收益可忽略——提示"早期看起来更快"的算法未必是长期更值得投入 rollout 算力的选择 [[2506.03569]]。
 
 ## 工程要点与数字
 
@@ -39,8 +41,9 @@ GRPO 是当前 reasoning RL（DeepSeek-R1、Kimi k1.5 等）事实上的默认�
 
 ## 相关概念
 
-[[rollout-efficiency]]、[[async-rl-training]]
+[[rollout-efficiency]]、[[async-rl-training]]、[[reward-as-a-service]]
 
 ## 相关来源
 
 - [[2609.25463]] — 详细推导退化组概率公式，并把它作为算法杠杆两大技术家族（rollout selection、prompt filtering）存在的根本动机
+- [[2506.03569]] — 提出纯 on-policy GRPO 变体（去 clipped surrogate），并实证其相比 vanilla GRPO 的规模化曲线差异（持续增长 vs ~2万样本饱和）

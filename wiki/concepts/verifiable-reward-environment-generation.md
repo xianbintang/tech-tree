@@ -51,7 +51,7 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 
 ## 相关概念
 
-[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）
+[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）、[[reward-as-a-service]]（环境生成解决"奖励从哪来"，RaaS 解决"多类奖励怎么在训练时低延迟提供"，是配套的服务化问题）
 
 ## 相关来源
 

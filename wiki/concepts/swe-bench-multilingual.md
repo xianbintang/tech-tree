@@ -2,8 +2,8 @@
 title: "SWE-bench Multilingual"
 aliases: [SWE-bench Multilingual]
 created: 2026-09-25
-updated: 2026-09-25
-sources: [2609.23377]
+updated: 2026-09-30
+sources: [2609.23377, xiaomimimo-uni-agent]
 ---
 
 # SWE-bench Multilingual
@@ -23,6 +23,7 @@ sources: [2609.23377]
 ## 工程要点与数字
 
 - [[2609.23377]] 中 Qwen3.6-27B 基础模型在该基准上基线平均解决率 56.22%，经 [[category-aware-expert-training]] + [[on-policy-distillation]]（MOPD）后提升到 59.00%（+2.78pp），提升幅度小于 [[swe-bench-pro]] 上的 +5.39pp [[2609.23377]]。
+- 训练框架 [[uni-agent]] 报告 ReAct + Qwen3-Coder-30B（200 turns, 128K）在该基准上得分 35.0（README 自报，未见方差或重复实验数据）——量级上明显低于 [[2609.23377]] 里 Qwen3.6-27B 的 56–59%，但两者模型、agent 结构、评测设置均不同，不能直接当作同一模型的对比 [[xiaomimimo-uni-agent]]。
 
 ## 争议与矛盾
 
@@ -34,8 +35,9 @@ sources: [2609.23377]
 
 ## 相关概念
 
-[[swe-bench-pro]]、[[category-aware-expert-training]]
+[[swe-bench-pro]]、[[category-aware-expert-training]]、[[uni-agent]]
 
 ## 相关来源
 
 - [[2609.23377]] — 用作跨语言泛化验证基准
+- [[xiaomimimo-uni-agent]] — 报告了 ReAct + Qwen3-Coder-30B 在该基准上的一个自报分数，作为另一模型/框架组合的数据点
