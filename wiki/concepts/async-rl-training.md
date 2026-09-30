@@ -46,7 +46,7 @@ sources: [2609.25463]
 
 ## 相关概念
 
-[[rollout-efficiency]]、[[grpo]]、[[rollout-training-mismatch]]
+[[rollout-efficiency]]、[[grpo]]、[[rollout-training-mismatch]]、[[elastic-rollout-training-scheduling]]（同一资源边界问题的另一条路径：不固定 rollout/训练粒度切分，而是让同构 GPU cell 按水位信号动态切换角色）
 
 ## 相关来源
 

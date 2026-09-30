@@ -2,8 +2,8 @@
 title: "Agent Rollout 与 GPU 训练抢占解耦"
 aliases: [rollout preemption, 抢占安全 rollout, agent sandbox 与 worker container 解耦, preemption-safe resumption, rollout-training decoupling, agent loop 解耦, sandbox pause/resume, 抢占安全的 rollout 恢复]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978]
+updated: 2026-09-30
+sources: [2609.19969, 2609.22978, 2609.33848]
 ---
 
 # Agent Rollout 与 GPU 训练抢占解耦
@@ -31,9 +31,12 @@ sources: [2609.19969, 2609.22978]
 - 这一整套机制在论文里**没有量化评估数字**，作者明确把"框架集成"标注为 evaluation 之外的范围，只提供了生产部署的描述性经验，这是当前需要靠后续论文或我们自己实验补上的空白 [[2609.22978]]。
 - 前提依赖：微服务/容器级的 pause/resume 需要 cgroup `memory.swap.max` 和 `memory.reclaim`，microVM 的 pause/resume 依赖 Firecracker 的快照能力（存/加载内存+执行状态的完整快照）[[2609.22978]]。
 
+- **另一层解耦：转发点级角色切换，而非沙箱级 pause/resume**：QwenGyre 把"保持 harness 状态不受 GPU 变化影响"这件事放到黑盒代理这一层解决——GPU cell 在 rollout/训练角色间切换时，代理把模型调用透明重路由到新的 GPU 引擎，同时用 KV-cache RDMA 迁移减少前缀重算；harness、沙箱、工作区全程不暂停、不迁移、甚至不感知底层 GPU 发生了角色切换。这与 DeepSeek 的"沙箱 pause/resume + token 级状态持久化"解决的是**同一个上层目标**（GPU 侧变化不能打断 agent 执行）但作用在不同层：DeepSeek 动的是沙箱/推理引擎的执行状态，QwenGyre 动的是"请求应该发到哪个 GPU"这一层路由，沙箱和 harness 本身完全不动 [[2609.33848]]。
+- **两者可能正交组合**：如果沙箱需要因为容量回收而暂停（DeepSeek 场景），同时 GPU 又需要在 rollout/训练间弹性切换（QwenGyre 场景），理论上可以分层叠加——但目前没有一篇来源讨论过这种组合，是一个待验证的空白 [[2609.33848]]。
+
 ## 争议与矛盾
 
-（暂无跨来源分歧；[[2609.19969]] 与 [[2609.22978]] 对同一架构改动的描述互相印证——前者从"使用方"训练效果视角，后者从沙箱平台设计视角——而非冲突）
+（暂无跨来源分歧；[[2609.19969]] 与 [[2609.22978]] 对同一架构改动的描述互相印证——前者从"使用方"训练效果视角，后者从沙箱平台设计视角；[[2609.33848]] 从"转发点级路由"而非"沙箱级暂停"解决同一类问题，是互补视角而非矛盾）
 
 ## 开放问题
 
@@ -44,9 +47,10 @@ sources: [2609.19969, 2609.22978]
 
 ## 相关概念
 
-[[sandbox-density-overcommit]]、[[microvm-sandbox]]
+[[sandbox-density-overcommit]]、[[microvm-sandbox]]、[[elastic-rollout-training-scheduling]]
 
 ## 相关来源
 
 - [[2609.19969]] — 从"使用方"角度描述该架构改动的动机与训练侧效果（跨 scaffold RL、异步 post-training 基础设施），补充 token 级状态持久化机制
 - [[2609.22978]] — DSec §6.2–6.3：rollout 与 GPU 训练解耦、pause/resume 协同抢占的生产经验（无量化评估）
+- [[2609.33848]] — 转发点级角色切换 + KV-cache RDMA 迁移，用不同的分层方式解决"GPU 侧变化不能打断 agent 执行"这同一个问题，并给出切换耗时等量化数字

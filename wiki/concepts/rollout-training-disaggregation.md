@@ -41,7 +41,7 @@ sources: [2026-09-29-moe-rl-eks-efa-deepep]
 
 ## 相关概念
 
-[[expert-parallelism]]、[[deepep]]
+[[expert-parallelism]]、[[deepep]]、[[elastic-rollout-training-scheduling]]（同样是 rollout/训练资源边界问题，但不按中断容忍度物理拆池，而是让同一批 GPU cell 按需切换角色，两者是互补而非互斥的设计方向）
 
 ## 相关来源
 
