@@ -2,8 +2,8 @@
 title: "Agentic RL 训练框架全景"
 aliases: [agentic RL frameworks, agent RL 训练框架]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2509.02547]
+updated: 2026-09-30
+sources: [2509.02547, prime-intellect-verifiers]
 ---
 
 # Agentic RL 训练框架全景
@@ -20,7 +20,7 @@ sources: [2509.02547]
 
 **Agentic RL 专用框架**（Section 5.2）：
 
-- **Verifiers**：可验证环境设置，端到端策略优化 [[2509.02547]]。
+- **Verifiers**（Prime Intellect 维护，详见 [[verifiers-framework]]）：不只是"可验证环境设置"，而是一整套环境打包/分发框架——Taskset/Harness/Agent/Env/Runtime 五层正交抽象，`vf-init`/`vf-eval` CLI + Environment Hub 分发，内置独立验证器沙箱（`IsolatedVerifierEnv`）、原生 Harbor 任务集接入、模型流量拦截层（实时 trace 构建 + reward-hacking 拦截）。仓库正处于 v0→v1 不兼容重写，"环境即可安装 Python 包"是目前对"环境打包规范"最完整的一份可运行参照 [[prime-intellect-verifiers]]。
 - **SkyRL-v0**：长程真实世界 agent 训练 [[2509.02547]]。
 - **AREAL**：异步、分布式架构，面向语言推理任务规模化 [[2509.02547]]。
 - **MARTI**：把范式扩展到多智能体 LLM 系统，集成训练与推理 [[2509.02547]]。
@@ -54,8 +54,9 @@ sources: [2509.02547]
 
 ## 相关概念
 
-[[agentic-rl]]、[[agentic-rl-environments]]
+[[agentic-rl]]、[[agentic-rl-environments]]、[[verifiers-framework]]、[[agent-execution-sandbox]]、[[harbor]]
 
 ## 相关来源
 
 - [[2509.02547]] — Table 11 系统盘点约 23 个 RL 训练框架，AWorld 的 14.6× 加速是本综述唯一量化的训练吞吐数字
+- [[prime-intellect-verifiers]] — 精读 Verifiers 仓库文档，补上综述里只有一句话的 Verifiers 条目：五层抽象、打包规范、独立验证器沙箱、Harbor 集成细节

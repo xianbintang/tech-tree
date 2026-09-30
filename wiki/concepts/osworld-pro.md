@@ -2,15 +2,15 @@
 title: "OSWorld-Pro"
 aliases: [OSWorld-Pro, 过程式 CUA 评测基准]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.24890]
+updated: 2026-09-30
+sources: [2609.24890, 2404.07972]
 ---
 
 # OSWorld-Pro
 
 ## 一句话定义
 
-NVIDIA 提出的 Computer-Use Agent（CUA）**过程式（process-based）**评测基准：305 个长程任务、2814 个有顺序依赖的子目标、67264 条人工标注，用 LLM-Judge 逐子目标打分，补充 OSWorld 一类只看最终产物的结果导向评测 [[2609.24890]]。
+NVIDIA 提出的 Computer-Use Agent（CUA）**过程式（process-based）**评测基准：305 个长程任务、2814 个有顺序依赖的子目标、67264 条人工标注，用 LLM-Judge 逐子目标打分，补充 [[2404.07972]]（OSWorld）一类只看最终产物的结果导向评测 [[2609.24890]]。
 
 ## 为什么对我们重要
 
@@ -18,6 +18,7 @@ NVIDIA 提出的 Computer-Use Agent（CUA）**过程式（process-based）**评�
 
 ## 核心机制 / 主要变体
 
+- 继承自 [[2404.07972]]（OSWorld，2024-04）的底子：POMDP 任务形式化、VM 快照式执行环境、pyautogui 原始动作空间、模型 harness（采样策略、system prompt）全部复用，OSWorld-Pro 只是在**评测层**换成子目标级过程判定，不是另起炉灶的新环境 [[2609.24890]]。
 - 任务分三类：Diversity（117，覆盖冷门应用）、Coordination（109，需协同 ≥4 应用）、Robustness（79，跨 19 种 Linux 发行版 + 13 种图形界面）[[2609.24890]]。
 - 每个任务的子目标彼此**顺序依赖**（不同于典型 rubric 的独立条目），平均 9.2 个子目标/任务 [[2609.24890]]。
 - 用 LLM-Judge（GPT-5.6-Sol Max 表现最好）在单次 API 请求里评估整条轨迹的 Target→Feasible→Progress→Complete 四层依赖判定，代替人工评测 [[2609.24890]]。
@@ -25,10 +26,10 @@ NVIDIA 提出的 Computer-Use Agent（CUA）**过程式（process-based）**评�
 
 ## 工程要点与数字
 
-- 最强模型（Claude Opus 4.8 Max）在 OSWorld-Pro 上仅 77.7% Overall，明显低于同系列在 OSWorld 上的 83.4%；开源权重模型差距更大（最好的 Qwen 3.8 Flash Next 125B 仅 55.1% vs OSWorld 上 >80%）[[2609.24890]]。
+- 最强模型（Claude Opus 4.8 Max）在 OSWorld-Pro 上仅 77.7% Overall，明显低于同系列在 [[2404.07972]]（OSWorld）上的 83.4%——对照 OSWorld 论文自己 2024 年报告的基线（当时最强模型 GPT-4 只有 12.24%），两年间结果导向分数涨了约 7 倍，但换成过程式评测立刻跌回，说明分数提升相当一部分来自"蒙对最终产物"而非过程可靠；开源权重模型差距更大（最好的 Qwen 3.8 Flash Next 125B 仅 55.1% vs OSWorld 上 >80%）[[2609.24890]]。
 - 任务级 token 成本可差 20 倍（GPT-5.6 Luna $0.51/任务 vs GPT-5.6-Sol $9.56/任务，性能接近）；全量跑一次某个模型的基准测试成本可达数千美元 [[2609.24890]]。
 - LLM-Judge 与人类的一致性在 Target/Complete 维度接近人类（分别 97.0 vs 98.4%、94.3 vs 97.6%），但在 Feasibility（61.9 vs 91.6%）、Progress（74.7 vs 94.1%）上明显偏弱，且推理力度越高越倾向于低估任务不可行的比例（9.7%→5.1%，人工基准 15.3%）[[2609.24890]]。
-- 执行环境/沙箱层面的工程细节（虚拟机或容器方案、镜像分发、长轨迹会话稳定性）论文完全未披露 [[2609.24890]]。
+- 执行环境/沙箱层面的工程细节（虚拟机或容器方案、镜像分发、长轨迹会话稳定性）论文完全未披露 [[2609.24890]]；沿用的 OSWorld 环境本身只公开了"VM 快照恢复 + 三段式初始化（启动 VM / 下载文件 / 预处理命令）"的架构思路，也没有密度、冷启动等数字 [[2404.07972]]。
 
 ## 争议与矛盾
 
@@ -41,8 +42,9 @@ NVIDIA 提出的 Computer-Use Agent（CUA）**过程式（process-based）**评�
 
 ## 相关概念
 
-[[computer-use-agent]]、[[process-based-evaluation]]
+[[computer-use-agent]]、[[process-based-evaluation]]、[[agent-execution-sandbox]]
 
 ## 相关来源
 
 - [[2609.24890]] — OSWorld-Pro 原始论文，提出基准构造方法、LLM-Judge 设计与模型评测结果
+- [[2404.07972]] — OSWorld 原论文：OSWorld-Pro 复用的执行环境、任务形式化与模型 harness 的来源，也是结果导向评测数字（83.4% vs 12.24%）的最初出处

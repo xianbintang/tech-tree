@@ -2,7 +2,7 @@
 title: "Generation-Execution-Feedback (GEF) Loop"
 aliases: [GEF loop, Generation-Execution-Feedback, 环境规模化, environment scaling]
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
 sources: [2511.09586, 2509.13311]
 ---
 
@@ -45,7 +45,7 @@ sources: [2511.09586, 2509.13311]
 - GAIA 基准上，任务结构从 sequential 到 graph-based、深度从个位数到 30 步，分数随之走高：WebDancer-32B 40.7 → WebExplorer-8B 50.0 → WebShaper-32B 52.4 → WebSailor-32B 53.2（同期工作横向陈列，非严格消融）[[2511.09586]]。
 - SWE 场景里 Docker 是执行沙箱的事实标准，兼顾跨机器一致性与隔离安全 [[2511.09586]]。
 - 论文**未讨论**环境规模化的成本侧（构建/维护算力和人力、镜像分发、并发执行资源竞争）——这是工程可行性评估的已知缺口，需要我们自己补 [[2511.09586]]。
-- AgentScaler-30B-A3B 以远小于 1T 的参数量在 tau-bench/tau2-Bench/ACEBench 上逼近或超过 Kimi-K2-1T-A32B 等万亿参数开源模型（ACEBench-en Overall 75.7 vs 77.4），是"环境规模化 + 两阶段训练"能显著提升 function-calling 能力的又一实证；但同样**未披露**环境自动构建流水线的算力/时间成本 [[2509.13311]]。
+- AgentScaler-30B-A3B 以远小于 1T 的参数量在 [[tau-bench]]/tau2-Bench/ACEBench 上逼近或超过 Kimi-K2-1T-A32B 等万亿参数开源模型（ACEBench-en Overall 75.7 vs 77.4），是"环境规模化 + 两阶段训练"能显著提升 function-calling 能力的又一实证；但同样**未披露**环境自动构建流水线的算力/时间成本 [[2509.13311]]。
 
 ## 争议与矛盾
 
@@ -59,7 +59,7 @@ sources: [2511.09586, 2509.13311]
 
 ## 相关概念
 
-[[agentic-rl]]、[[agentic-rl-environments]]、[[verifiable-reward-environment-generation]]、[[generator-verifier-asymmetry]]、[[repolaunch]]
+[[agentic-rl]]、[[agentic-rl-environments]]、[[verifiable-reward-environment-generation]]、[[generator-verifier-asymmetry]]、[[repolaunch]]、[[tau-bench]]
 
 ## 相关来源
 
