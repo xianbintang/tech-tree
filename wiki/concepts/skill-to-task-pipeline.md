@@ -2,8 +2,8 @@
 title: "Skill-to-Task Pipeline"
 aliases: [skill-to-task pipeline, 技能到任务管线, skill internalization, agent skill 内化, 对比式 skill 依赖性测试]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.27717]
+updated: 2026-09-30
+sources: [2609.27717, 2609.33772]
 ---
 
 # Skill-to-Task Pipeline
@@ -47,6 +47,7 @@ sources: [2609.27717]
 - 沙箱/执行环境的具体实现（$\rho_i$ 运行时约束怎么落地、Docker 化细节、并发与冷启动开销）论文正文未披露，需要去读代码仓库补充 [[2609.27717]]。
 - 这条"离线拒绝采样 + SFT"路线与真正把 verifier reward 接入 RL 相比效果差多少，尚无对照实验——环境和数据都已开源，是一个可以后续验证的具体问题 [[2609.27717]]。
 - 与 [[verifiable-reward-environment-generation]] 里 VHD-Play 的"机制先行"范式相比，两者对"环境生成成本"的可比性有限（VHD-Play 报 $0.01–0.03/条纯生成成本，SkillGym 报 4.5 小时/任务的人工+agent 混合构建成本，统计口径不同），跨范式的成本对比是个开放问题。
+- 同为 skill-grounded 路线、同源取材于 ClawHub/OpenClaw 公开 skill 库的 Skill2Env（[[2609.33772]]，与本文相差仅 4 天发表）走了另一条质量控制路径：不靠模板准入 + 对比依赖性测试做静态过滤，而是把能力需求拆成 5 个维度、用 100 条可复用难度模式驱动任务蓝图，并用 Iterative Task Hardening 持续对偏简单的任务加固。两条路线的质量控制机制都依赖某个特定 agent 的判断力（SkillGym 依赖参考 agent 的对比执行结果，Skill2Env 依赖诊断 agent 的加固判断），且都没有验证换一个更强/更弱的 agent 结论是否仍成立——这是两条路线共享的一个未解问题，而非各自独立的缺陷。
 
 ## 相关概念
 
@@ -55,3 +56,4 @@ sources: [2609.27717]
 ## 相关来源
 
 - [[2609.27717]] — 提出 skill-to-task pipeline 与两级准入（可行性 + 对比 skill 依赖性测试），构建 2,756 环境 / 8,364 轨迹，用 SFT 内化到 35B 模型并验证
+- [[2609.33772]] — 同源取材（ClawHub/OpenClaw 公开 skill 库）的另一条 skill-grounded 环境合成路线（Skill2Env），用能力驱动的难度模式 + Iterative Task Hardening 替代模板准入 + 对比依赖性测试，可与本文方法对照参考
