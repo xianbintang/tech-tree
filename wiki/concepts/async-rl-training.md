@@ -2,8 +2,8 @@
 title: "异步 RL 训练（Pipeline Decoupling / Policy Staleness）"
 aliases: [asynchronous RL training, pipeline decoupling, policy lag, policy staleness, rollout-train 解耦]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, 2609.34645]
 ---
 
 # 异步 RL 训练（Pipeline Decoupling / Policy Staleness）
@@ -46,8 +46,9 @@ sources: [2609.25463]
 
 ## 相关概念
 
-[[rollout-efficiency]]、[[grpo]]、[[rollout-training-mismatch]]
+[[rollout-efficiency]]、[[grpo]]、[[rollout-training-mismatch]]、[[elastic-parallelism-adaptation]]
 
 ## 相关来源
 
 - [[2609.25463]] — 系统性归纳 Pipeline Decoupling 的设计空间（粒度谱）与 lag 容忍度的新趋势，并给出与其他技术家族的可组合性分析
+- [[2609.34645]] — Nereus 在全异步场景下（安全边界为权重同步点）比异步框架 Laminar 快 37.3%；其"在线重规划执行计划"与本页"跨 barrier 的调度粒度"是两个可以叠加但未被联合评测过的正交维度

@@ -2,8 +2,8 @@
 title: "Agent Rollout 与 GPU 训练抢占解耦"
 aliases: [rollout preemption, 抢占安全 rollout, agent sandbox 与 worker container 解耦, preemption-safe resumption, rollout-training decoupling, agent loop 解耦, sandbox pause/resume, 抢占安全的 rollout 恢复]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978]
+updated: 2026-09-30
+sources: [2609.19969, 2609.22978, 2609.34645]
 ---
 
 # Agent Rollout 与 GPU 训练抢占解耦
@@ -44,9 +44,10 @@ sources: [2609.19969, 2609.22978]
 
 ## 相关概念
 
-[[sandbox-density-overcommit]]、[[microvm-sandbox]]
+[[sandbox-density-overcommit]]、[[microvm-sandbox]]、[[elastic-parallelism-adaptation]]
 
 ## 相关来源
 
 - [[2609.19969]] — 从"使用方"角度描述该架构改动的动机与训练侧效果（跨 scaffold RL、异步 post-training 基础设施），补充 token 级状态持久化机制
 - [[2609.22978]] — DSec §6.2–6.3：rollout 与 GPU 训练解耦、pause/resume 协同抢占的生产经验（无量化评估）
+- [[2609.34645]] — 互补而非重叠：本页解决"沙箱/rollout 被 GPU 训练抢占时如何不丢状态"，Nereus 解决"训练侧执行计划本身要不要因资源变化主动重规划"；Nereus 的 urgent 准入路径（GPU 被撤销时放弃盈利性要求、只求可行）与本页的 pause/resume 是同一问题的两种应对层级，量化了资源撤销后重规划的迁移代价（0.079% 运行时间）
