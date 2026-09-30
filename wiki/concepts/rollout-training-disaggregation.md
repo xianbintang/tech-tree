@@ -2,8 +2,8 @@
 title: "Rollout/Training 分离调度（Rollout-Training Disaggregation）"
 aliases: [rollout-training disaggregation, rollout/训练分离, 异步 RL 资源拆分, elastic rollout]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2026-09-29-moe-rl-eks-efa-deepep]
+updated: 2026-09-30
+sources: [2026-09-29-moe-rl-eks-efa-deepep, 2609.34645]
 ---
 
 # Rollout/Training 分离调度
@@ -41,8 +41,9 @@ sources: [2026-09-29-moe-rl-eks-efa-deepep]
 
 ## 相关概念
 
-[[expert-parallelism]]、[[deepep]]
+[[expert-parallelism]]、[[deepep]]、[[elastic-parallelism-adaptation]]
 
 ## 相关来源
 
 - [[2026-09-29-moe-rl-eks-efa-deepep]] — AWS 博客，提出 EKS 上按中断容忍度拆分 rollout（Spot）与 training（稳定容量）资源池的架构模式
+- [[2609.34645]] — 不做资源池物理拆分，而是让单个耦合 job 的执行计划（DP/TP/PP）本身随资源/负载漂移在线重规划，是本页"资源池切分"思路之外的另一种弹性应对方式，可对照参考
