@@ -2,8 +2,8 @@
 title: "Agentic 工作流的 Token 成本放大"
 aliases: [agentic token cost, token 消耗放大, agent 推理成本]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2026-09-26-amazon-bedrock-open-weight-coding-agent]
+updated: 2026-09-30
+sources: [2026-09-26-amazon-bedrock-open-weight-coding-agent, xiaomimimo-mimo-code]
 ---
 
 # Agentic 工作流的 Token 成本放大
@@ -23,6 +23,7 @@ sources: [2026-09-26-amazon-bedrock-open-weight-coding-agent]
   - **按角色/任务复杂度路由到不同规格模型**（见 [[model-routing-by-task]]），把不必要的高成本推理让给便宜模型。
   - **分层延迟/成本定价**：如 Bedrock 的 Priority（低延迟贵）/ Standard（按需）/ Flex（可变延迟，成本低 50%，适合可容忍延迟的批处理任务）三档 [[2026-09-26-amazon-bedrock-open-weight-coding-agent]]。
   - **稀疏 MoE 推理**：只激活模型总参数的一部分（如 Nemotron 3 Super 120B 声称仅激活 12B/120B），换取吞吐提升（文中引用 7 倍），本质是用架构手段而非路由手段降本 [[2026-09-26-amazon-bedrock-open-weight-coding-agent]]。
+  - **上下文缓存命中率**：终端编程 agent MiMo Code 宣称"up to 99% same-session and 95% cross-session cache hit rates"，作为其"controlled long-task cost"策略的一部分（配合按需模型路由、只编辑必要区域）；同样是厂商自报数字，无测量方法论、样本规模或统计口径说明 [[xiaomimimo-mimo-code]]。
 
 ## 工程要点与数字
 
@@ -46,3 +47,4 @@ sources: [2026-09-26-amazon-bedrock-open-weight-coding-agent]
 ## 相关来源
 
 - [[2026-09-26-amazon-bedrock-open-weight-coding-agent]] — 提出 token 放大倍数、Bedrock 分层定价、稀疏 MoE 吞吐这几个成本相关的量级参考
+- [[xiaomimimo-mimo-code]] — 追加一个"厂商自报缓存命中率、无方法论"的同类案例（99%/95% 上下文缓存命中率）

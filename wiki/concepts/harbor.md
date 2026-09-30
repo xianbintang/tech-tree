@@ -2,8 +2,8 @@
 title: "Harbor"
 aliases: [Harbor Framework, Harbor agent evaluation framework]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.26777]
+updated: 2026-09-30
+sources: [2609.26777, xiaomimimo-uni-agent]
 ---
 
 # Harbor
@@ -21,6 +21,7 @@ Harbor 是"repo 级 + GPU 依赖"这类 agent 评测任务的具体沙箱基础�
 - 定位：容器环境中评测和优化 agent/模型的开源框架，来自 Terminal-Bench 的创建团队 [[2609.26777]]。
 - 支持异构硬件：可在纯 CPU 或单卡 H100 GPU 的沙箱环境里执行任务，[[swe-serve]] 用它同时跑 12 个 CPU 任务和 41 个 GPU 任务 [[2609.26777]]。
 - 版本：论文实验使用 0.13.1（`github.com/harbor-framework/harbor`）[[2609.26777]]。
+- 生态集成：agent 训练框架 [[uni-agent]] 把 Harbor 集成为额外的任务格式，Harbor 覆盖的所有任务可以直接跑在 Uni-Agent 的推理/评测管线上，不需要为每个 Harbor 任务单独写适配 [[xiaomimimo-uni-agent]]。
 
 ## 工程要点与数字
 
@@ -39,8 +40,9 @@ Harbor 是"repo 级 + GPU 依赖"这类 agent 评测任务的具体沙箱基础�
 
 ## 相关概念
 
-[[swe-serve]]
+[[swe-serve]]、[[uni-agent]]
 
 ## 相关来源
 
 - [[2609.26777]] — 用 Harbor 0.13.1 执行 SWE-Serve 的全部 53 个任务，报告了具体的资源配额与重跑策略
+- [[xiaomimimo-uni-agent]] — 提到 Uni-Agent 把 Harbor 集成为额外任务格式，但未展开集成的技术细节

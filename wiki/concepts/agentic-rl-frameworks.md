@@ -2,8 +2,8 @@
 title: "Agentic RL 训练框架全景"
 aliases: [agentic RL frameworks, agent RL 训练框架]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2509.02547]
+updated: 2026-09-30
+sources: [2509.02547, xiaomimimo-uni-agent]
 ---
 
 # Agentic RL 训练框架全景
@@ -33,6 +33,8 @@ sources: [2509.02547]
 - **AgentRL**：多轮多任务异步框架，统一环境编排，引入 cross-policy sampling 与 task advantage normalization 稳定大规模训练 [[2509.02547]]。
 - **RL-Factory**：易于设计的奖励定义 [[2509.02547]]。
 
+**综述之外：[[uni-agent]]**（不在 [[2509.02547]] Table 11 覆盖范围内，是更晚出现的框架）：用 Gateway 统一接入任意 agent harness（Claude Code、Mini-SWE-Agent……），Agent/Tool/Task/Sandbox 四抽象解耦，支持 1,000+ 长程有状态 session 并发，沙箱后端可插拔（local/Docker/veFaaS/Modal/OpenYuanrong）；训练侧提供全异步 recipe，用 GRPO/GSPO 类目标 [[xiaomimimo-uni-agent]]。
+
 **RLHF/微调框架**：OpenRLHF（高性能可扩展对齐工具包）、TRL（HuggingFace 基线实现）、trlX（数百亿参数分布式微调）、HybridFlow（RLHF 实验管理与规模化）、SLiMe（Megatron+SGLang 组合的异步 RL、解耦式 reward/数据生成）、Oat（轻量 RL 支持）[[2509.02547]]。
 
 **通用 RL 框架**：RLlib（生产级可扩展库）、Acme（模块化分布式组件）、Tianshou（纯 PyTorch 高性能平台）、Stable Baselines3（可靠 PyTorch 实现）、PFRL（原 ChainerRL，基准化原型算法）[[2509.02547]]。
@@ -54,8 +56,9 @@ sources: [2509.02547]
 
 ## 相关概念
 
-[[agentic-rl]]、[[agentic-rl-environments]]
+[[agentic-rl]]、[[agentic-rl-environments]]、[[uni-agent]]
 
 ## 相关来源
 
 - [[2509.02547]] — Table 11 系统盘点约 23 个 RL 训练框架，AWorld 的 14.6× 加速是本综述唯一量化的训练吞吐数字
+- [[xiaomimimo-uni-agent]] — 综述发表之后出现的框架，Gateway 统一接入 harness + 可插拔沙箱后端是本综述里其他框架都没有强调的设计点
