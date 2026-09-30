@@ -2,8 +2,8 @@
 title: "Generator-Verifier Asymmetry"
 aliases: [生成器-验证器不对称, generator-verifier gap]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2511.09586, 2509.13311]
+updated: 2026-09-30
+sources: [2511.09586, 2509.13311, 2412.21139, 2504.21798, 2504.07164]
 ---
 
 # Generator-Verifier Asymmetry
@@ -18,7 +18,7 @@ sources: [2511.09586, 2509.13311]
 
 ## 核心机制 / 主要变体
 
-- **易验证域**（数学推理、代码生成）：RLVR（Reinforcement Learning with Verifiable Rewards）范式已取得较大成功，验证可以是确定性的（跑测试用例、检查数值答案）[[2511.09586]]。function-calling 是易验证域的另一个具体样本：AgentScaler（[[2509.13311]]）把每个工具形式化为对数据库 schema 的读写操作，验证直接靠"最终数据库状态是否与 gold 状态一致"（write 型工具）或"工具序列/参数是否精确匹配"（read 型工具）完成，完全不需要 LLM-as-judge 介入 [[2509.13311]]。
+- **易验证域**（数学推理、代码生成）：RLVR（Reinforcement Learning with Verifiable Rewards）范式已取得较大成功，验证可以是确定性的（跑测试用例、检查数值答案）[[2511.09586]]。function-calling 是易验证域的另一个具体样本：AgentScaler（[[2509.13311]]）把每个工具形式化为对数据库 schema 的读写操作，验证直接靠"最终数据库状态是否与 gold 状态一致"（write 型工具）或"工具序列/参数是否精确匹配"（read 型工具）完成，完全不需要 LLM-as-judge 介入 [[2509.13311]]。[[swe-gym]] 是 SWE 场景下的另一具体样本，但它同时展示了"验证便宜"不等于"验证器好训练"：单测执行本身是确定性、零成本的确定性验证，但用它产出的成败标签去训练一个可泛化的 ORM（outcome-supervised reward model）并不轻松——32B ORM 的 Best@16（32.0%）与理论上限 Pass@16（42.8%）之间仍有 10.8pp 差距，说明"域本身易验证"和"验证器质量已经够用"是两件事 [[2412.21139]]。**[[swe-smith]] 给出这一确定性验证门槛的镜像应用**：SWE-Gym 用"gold patch 通过测试数 > 原始代码"验证修复是否有效，SWE-smith 反过来用"候选 patch 至少破坏 1 个原本通过的测试（Fail-to-Pass）"验证合成的 bug 是否有效——两者都是同一套执行式确定性检查，零 LLM 判分介入，分别用在"验证修复"和"验证 bug 生成"两个方向上 [[2504.21798]]。**[[r2e-gym]] 进一步证明"域易验证"不等于"单一验证器够用"，且给出具体改进方案**：执行型验证器（EB，跑生成的回归测试）与无执行型验证器（EF，LLM 判分补丁+轨迹）各自单独使用时推理时扩展都饱和在 ~43%；关键诊断是 EF 验证器存在系统性偏差——严重依赖 agent 的"思维轨迹"而非补丁本身（去掉轨迹 Best@26 从 42.8%→37.6%，注意力可视化证实权重集中在思维文本而非代码 diff），提示"无执行判分"类验证器可能在学"听起来自信"这一代理信号而非真实正确性；混合两者（EF 粗筛 + EB 精排，抑制"通过错误补丁但让正确补丁失败"的毒性测试干扰）把上限推到 Best@26 51.0%，是易验证域里"验证器本身也需要精心设计、不能默认够用"的一个具体量化样本 [[2504.07164]]。
 - **易生成难验证域**（创意写作、医疗咨询、政策制定）：ground truth 往往缺失，验证需要主观判断，难以达成统一标准。应对方案包括：
   - BRPO 用成对生成式奖励模型（pairwise generative reward model）给出比较性质量分数，规避直接给创造力打分 [[2511.09586]]。
   - ARE 把"参数匹配硬检查"（如校验邮箱 ID 等确定性字段）与"生成式 rubric 软检查"结合，兼顾客观性与覆盖面 [[2511.09586]]。
@@ -39,9 +39,11 @@ sources: [2511.09586, 2509.13311]
 
 ## 相关概念
 
-[[gef-loop]]、[[verifiable-reward-environment-generation]]、[[agentic-rl]]
+[[gef-loop]]、[[verifiable-reward-environment-generation]]、[[agentic-rl]]、[[swe-gym]]、[[swe-smith]]、[[r2e-gym]]
 
 ## 相关来源
 
 - [[2511.09586]] — Section 5.2 提出 Generator-Verifier Asymmetry 概念，并给出 BRPO、ARE 两个缓解案例
 - [[2509.13311]] — 提供 function-calling 这一易验证域的具体验证实现（数据库状态比对 + 工具序列精确匹配），佐证易验证域可以完全不依赖主观判断
+- [[2504.21798]] — SWE-smith 一手论文，给出与 SWE-Gym 镜像对称的执行式验证门槛（Fail-to-Pass），佐证同一套确定性检查可双向用于验证修复与验证 bug 生成（见 [[swe-smith]]）
+- [[2504.07164]] — R2E-Gym 一手论文，提出执行型+无执行型混合验证器，给出"验证器本身需要精心设计"的量化诊断与改进方案（见 [[r2e-gym]]）
