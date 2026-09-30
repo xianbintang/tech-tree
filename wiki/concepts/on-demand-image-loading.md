@@ -2,8 +2,8 @@
 title: "On-demand Image Loading / 镜像按需加载"
 aliases: [on-demand container loading, 按需镜像加载, 稀疏加载, sparse loading, lazy loading]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2023-brooker-lambda-container-loading, brooker-lambda-snapstart]
+updated: 2026-09-30
+sources: [2023-brooker-lambda-container-loading, brooker-lambda-snapstart, agentenv-docs]
 ---
 
 # On-demand Image Loading / 镜像按需加载
@@ -20,7 +20,7 @@ sources: [2023-brooker-lambda-container-loading, brooker-lambda-snapstart]
 
 按加载粒度可以分成两条路线：
 
-- **块级（block-level）路线**：把镜像"打平"成单一块设备镜像（如 ext4），通过 virtio-blk/FUSE 之类的块接口按需读取，文件系统语义完全留在 guest 内部处理，host 侧只关心块。[[2023-brooker-lambda-container-loading]] 采用此路线，理由是保持 host 侧接口简单（攻击面小），代价是失去了"按文件/层"做更精细策略（如区分启动必需 vs 可延后）的能力。DADI 也是块级路线，但用 P2P 分发而非专用缓存层，且不支持 [[2023-brooker-lambda-container-loading]] 这种程度的去重。
+- **块级（block-level）路线**：把镜像"打平"成单一块设备镜像（如 ext4），通过 virtio-blk/FUSE 之类的块接口按需读取，文件系统语义完全留在 guest 内部处理，host 侧只关心块。[[2023-brooker-lambda-container-loading]] 采用此路线，理由是保持 host 侧接口简单（攻击面小），代价是失去了"按文件/层"做更精细策略（如区分启动必需 vs 可延后）的能力。DADI 也是块级路线，但用 P2P 分发而非专用缓存层，且不支持 [[2023-brooker-lambda-container-loading]] 这种程度的去重。[[agentenv-docs]]（AgentENV，Kimi K3 沙箱运行时）是块级路线的第三个生产实现：OverlayBD（LSMT 分层格式）+ ublk 用户态块设备，本地磁盘作有界缓存（保留热数据、淘汰冷数据），使聚合镜像/快照体积可以远超单机磁盘容量，扩展到 150 万镜像量级 [[agentenv-docs]]。
 - **文件系统层（filesystem-level）路线**：保留容器 OCI 镜像的分层结构，在文件/层粒度做懒加载（如 Slacker、Starlight、eStargz），或者用专门的只读压缩文件系统分离 metadata 与 data（如 DSec 用 EROFS：metadata 本地化、data 按需从 3FS 拉取,§5.3）。这条路线更贴近容器原生的分层语义，但引入了 overlay 多层文件系统的复杂度。
 - **两条路线共同的前提性发现**：容器/沙箱启动时只需要访问镜像很小一部分数据——Harter et al.（被 [[2023-brooker-lambda-container-loading]] 引用）测得平均只需 6.4%；DSec §5.3 独立观测到同样的 sparsity 现象并作为其设计的出发点（Tab. 3）。
 - **去重是块级路线的自然延伸**：[[2023-brooker-lambda-container-loading]] 通过确定性 flatten（消除文件系统实现的非确定性）保证共享 base layer 的镜像在块级产生逐位相同的数据，再用收敛加密（chunk 内容派生密钥）在不共享密钥的前提下去重——这是多租户公开云场景下"既要去重又要租户隔离"的一个成熟方案。DSec 场景是单租户训练基础设施，直接复用已有的 3FS 存储，未做类似的去重加密层。
@@ -34,10 +34,11 @@ sources: [2023-brooker-lambda-container-loading, brooker-lambda-snapstart]
 - 延迟（[[2023-brooker-lambda-container-loading]]）：L2 缓存命中中位 550µs vs S3 origin 中位 36ms；端到端读延迟呈三模态分布（本地 <100µs / L2 命中 ~2.75ms / origin 拉取更慢）。
 - 规模（[[2023-brooker-lambda-container-loading]]）：单客户最高 15,000 容器/秒创建速率;累计处理"数百万亿次"invocation。
 - DSec §5.3 的对应数字：8,192 容器并发启动测试中,按需 EROFS 加载相比 eager Docker pull 快 1.71x（35 分钟 vs 60+ 分钟完成全部任务）,磁盘写入量减少约 57%（~700GB vs ~1,600GB/节点）,接近全本地基线（~600GB）。
+- AgentENV 生产规模（vendor claim,无测试方法说明）：快照沙箱冷启动/恢复 <50ms；聚合镜像/快照足迹扩展到 150 万镜像量级 [[agentenv-docs]]。
 
 ## 争议与矛盾
 
-- **块级 vs 文件系统层孰优孰劣,两篇来源没有直接对比数字**：[[2023-brooker-lambda-container-loading]] 选块级理由是攻击面更小；DSec §5.3 选 EROFS（文件系统层,但用多设备模式分离 metadata/data）理由是复用已有 3FS 存储基础设施、避免部署独立分发层。两者面对的信任边界不同（公开多租户 vs 内部单租户）,尚不能得出哪条路线在同等条件下性能更优的结论,需要待读 DADI/FaaSNet/CoFS/Nydus（阅读清单 Key E）后补充跨系统对比。
+- **块级 vs 文件系统层孰优孰劣,来源没有直接对比数字**：[[2023-brooker-lambda-container-loading]] 与 [[agentenv-docs]] 都选块级，理由分别是"攻击面更小"（Lambda,公开多租户场景）和"microVM 场景 Firecracker 不支持 virtio-fs、且与 DSec 团队共享同一套 OverlayBD 实现"（AgentENV）；DSec §5.3 容器场景选 EROFS（文件系统层,但用多设备模式分离 metadata/data）理由是复用已有 3FS 存储基础设施、避免部署独立分发层，但 DSec microVM 场景同样改用 OverlayBD 块级方案——**同一篇论文内部按后端类型分别采用了两条路线**，说明"块级 vs 文件系统层"更多是"容器 vs microVM 可用接口"的技术约束决定，而非单纯的性能权衡。仍待读 DADI/FaaSNet/CoFS/Nydus（阅读清单 Key E）后补充跨系统对比。
 
 ## 开放问题
 
@@ -54,3 +55,4 @@ sources: [2023-brooker-lambda-container-loading, brooker-lambda-snapstart]
 
 - [[2023-brooker-lambda-container-loading]] — AWS Lambda 生产系统:块级按需加载 + 收敛加密去重 + 纠删码缓存,处理数百万亿次 invocation 的完整设计与运维经验
 - [[brooker-lambda-snapstart]] — 提出"快照数据搬运是规模化的最大挑战"，是本概念页问题动机的一处旁证（针对快照内存而非镜像，参见「开放问题」）
+- [[agentenv-docs]] — AgentENV（Kimi K3 沙箱运行时）：块级路线的第三个生产实现（OverlayBD+ublk），本地磁盘有界缓存 + 150 万镜像生产规模声明

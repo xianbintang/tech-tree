@@ -2,8 +2,8 @@
 title: "沙箱镜像分发与按需加载"
 aliases: [on-demand image loading, 按需镜像分发, 可组合镜像层, EROFS, composable environment layers]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2609.22978]
+updated: 2026-09-30
+sources: [2609.22978, agentenv-docs]
 ---
 
 # 沙箱镜像分发与按需加载
@@ -24,6 +24,7 @@ sources: [2609.22978]
 - **3FS 按需加载**（区别于常见的"registry + P2P"组合）：镜像直接放在集群已有的 3FS 分布式文件系统上，按 3FS 的不对称 I/O 特性（大块顺序读写快、小随机 I/O 差）设计三条原则——写留本地盘、读按需+批量拉取、元数据尽量留本地（EROFS 支持 metadata/data 分离设备模式，只把 metadata 下载到本地）[[2609.22978]]。
 - **层合并优化**：为避免挂载层数过多拖慢创建，DSec 离线把小于阈值（如 3GB）的连续层合并成一对 EROFS 镜像（保留 overlayfs whiteout 语义表示文件删除），减少最终 mount 数量，同时保留跨镜像共享层的页缓存复用 [[2609.22978]]。
 - **microVM 侧的对应方案**：容器路线的 EROFS/overlayfs 组合不满足 microVM 需求（如 Docker overlay2 driver 不支持 overlayfs 数据目录，Firecracker 不支持 virtio-fs）；microVM 改用 OverlayBD 块级格式 + 团队自研的 ublk 用户态块设备框架，256KiB 粒度按需拉取 + 二级本地缓存，支持增量磁盘快照而不需要重新打包成 EROFS [[2609.22978]]。
+- **同一套 OverlayBD+ublk 实现已开源并在另一家生产系统验证**：[[agentenv-docs]]（AgentENV，为 Kimi K3 的 agentic RL 训练供能）用的正是 LSMT 分层镜像格式（只读层 + 单一可写 upper 层，段索引 16 字节/条位打包，zstd level 3 压缩）+ ublk 用户态块设备（`uvm-ublk-daemon` 统一管理全节点设备生命周期，io_uring 零拷贝）这套机制，且其代码路径与 DSec 论文点名开源的 `kvcache-ai/AgentENV/tree/main/storage/overlaybd` 完全一致——两个系统的镜像分发底座大概率同源 [[agentenv-docs]]。本地磁盘被描述为"有界缓存"：保留热数据、淘汰冷数据，使镜像/快照的**聚合体积可以远超单机磁盘容量**，不需要为每个节点预热完整镜像集 [[agentenv-docs]]。
 
 ## 工程要点与数字
 
@@ -33,15 +34,17 @@ sources: [2609.22978]
 - 消融数字（EROFS vs. tar.gz 分层挂载，Figure 11）：任务完成时间从 79 分钟降到 45 分钟（**1.76×**），tar 方案磁盘写流量是 EROFS 的 **5.5×**、峰值写吞吐 **3.4×**[[2609.22978]]。
 - 云 bursting 场景：一个去重后 30TB 的 EROFS 镜像集覆盖了 70% 容器任务的镜像依赖，可整体同步到云端文件系统供 cloud burst 使用 [[2609.22978]]。
 - 相关系统（DSec 论文点名但未展开精读，留待 category E）：Nydus（EROFS 兼容格式 + fscache/FUSE 懒加载）、DADI（块级按需镜像）、FaaSNet（P2P 镜像分发）——DSec 强调自己复用已有 3FS 而非另起 registry+P2P 分发层 [[2609.22978]]。
+- **AgentENV 生产规模数字**（vendor claim，无测试方法说明）：镜像/快照聚合足迹扩展到 **150 万镜像**（README，引用 Kimi K3 技术报告）[[agentenv-docs]]。
 
 ## 争议与矛盾
 
-（暂无跨来源分歧，仅一篇来源；后续读 EROFS、DADI、Nydus、FaaSNet、CoFS 原始论文后补充）
+（暂无跨来源分歧；AgentENV 与 DSec 在机制层面高度一致，未发现矛盾数字，仅生产规模量级不同——DSec 给出周活跃资产数（容器 11,266 base image / microVM 2 base image），AgentENV 给出的是"150 万镜像"这一更粗粒度的规模声明，两者口径不同不构成直接对比）
 
 ## 开放问题
 
 - DSec 的"3GB 阈值合并连续层"是具体工程参数，论文未说明这个阈值如何调优、是否随负载类型变化。
 - 按需加载的收益量级（1.71×/1.76×）依赖于镜像访问比例确实很低（4%–13%）这一前提，不同团队的负载分布若访问比例更高，收益可能显著缩水——需要在自己的负载上先采样验证。
+- AgentENV"150 万镜像"与"本地磁盘有界缓存"的具体淘汰策略（LRU？访问频率加权？）文档未说明，值得读 `storage/overlaybd`/`storage/ublk` 源码确认。
 
 ## 相关概念
 
@@ -50,3 +53,4 @@ sources: [2609.22978]
 ## 相关来源
 
 - [[2609.22978]] — DSec：提出可组合环境层 + EROFS/3FS 按需加载，给出量化消融数据
+- [[agentenv-docs]] — AgentENV：开源了与 DSec 同代码路径的 OverlayBD（LSMT）+ ublk 实现，给出 150 万镜像的生产规模声明
