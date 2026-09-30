@@ -1,9 +1,9 @@
 ---
 title: "Rollout–训练不一致（Rollout–Training Mismatch）"
-aliases: [rollout-training mismatch, rollout–training consistency, sampler-trainer mismatch, 采样-训练数值不一致]
+aliases: [rollout-training mismatch, rollout–training consistency, sampler-trainer mismatch, 采样-训练数值不一致, MoE 路由不一致, Rollout Routing Replay, R3]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, 2601.02780]
 ---
 
 # Rollout–训练不一致（Rollout–Training Mismatch）
@@ -28,6 +28,7 @@ sources: [2609.25463]
   - AIS：按批次的有效样本量（effective sample size）诊断动态调整 importance-weight 混合比例 [[2609.25463]]。
 - **异步场景下的叠加风险**：在异步训练（[[async-rl-training]]）里，policy lag 造成的 importance weighting 与数值 mismatch 造成的 importance weighting 会叠加在同一个 ratio 上——footprint 降低那一翼的方法（FP8-RL、QaRL、AIS 等）如果再叠加异步执行，等于把两层修正堆到一起，论文指出目前没有方法测量过这种叠加组合 [[2609.25463]]。
 - **投机解码的关联风险**：数值 mismatch 会同时降低草稿接受率，因为 drafting 和 verifying 概率本就存在细微差异，mismatch 进一步拉大这个差距 [[2609.25463]]。
+- **MoE 专属子问题：路由不一致（Rollout Routing Replay / R3）**：对 MoE 模型，rollout 引擎和训练引擎不仅计算的 log-prob 有数值误差，连同一个 token 被路由到**哪些专家**都可能因精度差异而不同——这比稠密模型的 mismatch 更严重，因为路由错位会让训练梯度更新到"rollout 时根本没激活"的专家上。MiMo-V2-Flash 提出的修正方式是**在训练时强制复用 rollout 阶段实际选中的专家**（而不是让训练引擎重新计算路由），通过优化数据类型和通信重叠把额外开销做到可忽略；多轮 agent 训练场景下再配一个请求级前缀缓存，同时保存 KVCache 和 MoE 路由结果供后续轮次复用——与常见的跨请求共享的 radix cache 不同，这个缓存不做跨请求共享，专门保证同一请求内路由的一致性 [[2601.02780]]。这属于本页"修正方式二：对齐两个引擎的数值实现"的一个具体化，但只处理路由这一个专属于 MoE 的错位来源，不能替代 token 级 log-prob 的数值对齐。
 
 ## 工程要点与数字
 
@@ -43,6 +44,7 @@ sources: [2609.25463]
 
 - 没有方法测量过"policy lag 修正 + 数值 mismatch 修正"叠加后的稳定性，AIS 的按批效应样本量诊断是目前唯一给出的缓解手段但未在叠加场景下验证 [[2609.25463]]。
 - 论文没有给出"多大的数值 mismatch 才会实质影响训练结果"的量化阈值，只指出它会随轨迹长度累积。
+- R3 的额外开销被描述为"可忽略"，但 [[2601.02780]] 未给出具体的延迟/显存数字，也没有说明该机制对非 MoE（稠密）模型是否有等价需求或完全不适用。
 
 ## 相关概念
 
@@ -51,3 +53,4 @@ sources: [2609.25463]
 ## 相关来源
 
 - [[2609.25463]] — 把 rollout–训练不一致作为独立于策略滞后的正确性问题系统讨论，并归纳三层估计量正确性区分（精确保真/修改目标无偏/仅实证观察）
+- [[2601.02780]] — 提出 Rollout Routing Replay（R3），针对 MoE 模型路由不一致这一专属子问题，训练时强制复用 rollout 阶段的实际路由
