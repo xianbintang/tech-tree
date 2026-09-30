@@ -2,8 +2,8 @@
 title: "Rollout Efficiency（Rollout 效率）"
 aliases: [rollout efficiency, rollout-efficiency taxonomy, rollout 成本优化]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, skyrl-v0, 2511.16108, 2504.20073, 2511.14617]
 ---
 
 # Rollout Efficiency（Rollout 效率）
@@ -24,9 +24,9 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 - 系统杠杆——把已请求的 rollout 工作执行得更快，不改变请求了什么：
   - **Pipeline Decoupling**（流水线解耦）：让 rollout/训练并发，代价是策略滞后。详见 [[async-rl-training]]。
   - **Resource-Aware Execution**（资源感知执行）：收割空闲/异构/共享容量，或降低单条 rollout 的显存/精度 footprint。
-  - **Scheduling & Load Balancing**（调度与负载均衡）：按预测长度排序/分组请求，减少长尾同步气泡；不改变生成算法或采样分布。
+  - **Scheduling & Load Balancing**（调度与负载均衡）：按预测长度排序/分组请求，减少长尾同步气泡；不改变生成算法或采样分布。**Seer** 给出一个不依赖训练长度预测器的具体信号来源——利用 GRPO 组结构本身：组内指定一个"推测请求"优先按短优先执行探路，用它的真实完成长度估计整组，再做近似最长优先调度（LFS），配合把组级调度细化到请求块级的"分割推理"（Divided Rollout，基于全局共享 KVCache 池支持块级跨实例重调度）[[2511.14617]]。
   - **Partial & Early-Stop Rollout**（部分/提前停止）：固定预算截断、暂停恢复、学习信号触发的提前停止；处于系统/算法杠杆边界（执行决策 vs 采样决策）。
-  - **Speculative Decoding**（投机解码）：用旧策略/草稿模型的输出做草稿，目标策略一次验证；RL 场景特有的是"上一步的策略输出可以做这一步的草稿"。
+  - **Speculative Decoding**（投机解码）：用旧策略/草稿模型的输出做草稿，目标策略一次验证；RL 场景特有的是"上一步的策略输出可以做这一步的草稿"。**Seer** 的组感知投机解码是这一特有性质的另一种取法——不用上一步策略输出，而是用**同一迭代内同组其他请求**的已生成 token 做草稿来源（压缩后缀树聚合组内上下文），并按批大小动态调整投机预算，因为固定 $\gamma$ 在 rollout 场景批大小剧烈波动（1 到数百）时可能产生负收益 [[2511.14617]]。
 - 算法杠杆——减少学习所需的 rollout 工作量：
   - **Rollout Selection**：生成完成后再决定用哪些轨迹做更新（成本已经付出，只省 update 阶段计算，除非引入 replay）。
   - **Prompt Filtering & Selection**：生成前/中预测哪些 prompt 值得生成，跳过或降低预算——能真正省下生成成本。
@@ -40,6 +40,8 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 - 生产推理轨迹上的同步测量：rollout 占单步墙钟时间基础工作负载 49%，长 CoT 变体 58%（作者自测，Figure 1）；文献里其他测量给出 70%、85%、长输出场景 >90% [[2609.25463]]。
 - 系统杠杆代表数字：AReaL（1.5B–32B）吞吐 2.77×；LlamaRL（405B）单步 10.7×；RollPacker 端到端 2.03–2.56×；DeepScaleR 用递增 context（8K→16K→24K）把训练算力从估算 70000 A100-小时压到约 3800；ESPO 提前停止减少 rollout token >20% 且提升准确率 [[2609.25463]]。
 - 算法杠杆代表数字：GRESO rollout 提速 2.4×、最多减少 3.35× rollout，质量持平；POPO 用 replay 达到过采样基线效果只需约 30% rollout 预算；KGPS 显式建模非平稳性，比动态采样减少 83% rollout [[2609.25463]]。
+- **SkyRL-v0（agentic/SWE 长程场景，Scheduling & Load Balancing + Pipeline Decoupling 组合）**：异步 rollout（用推理引擎 `async_generate`，每条轨迹独立推进不设全局同步点）叠加 init/run/eval 三阶段生产者-消费者流水线（环境初始化、轨迹生成、reward 计算三阶段解耦重叠），合计相对同步单批基线加速 **4–5×**；是 [[2609.25463]] 综述里"算法杠杆几乎只测过单轮任务、agentic/多轮场景实测稀缺"这一开放问题的一个具体反例补充 [[skyrl-v0]]。**SkyRL-Agent** 把上述流水线论文化、量化：相对已异步化的 Async Batch (Bounded) 基线（而非同步基线），Async Pipeline 调度策略再提速 **1.55×**，生成阶段 GPU 利用率从大幅波动稳定到约 90%（2×8 H100，batch 64×8 rollouts）；同时给出 SWE agent 训练配方侧的算法杠杆——AST 代码搜索工具把稀疏延迟奖励下"64 条 rollout 只解出 14 条"的低信号密度问题显著缓解，是本页"算法杠杆多轮场景证据不足"这一开放问题的又一个补充案例，但这里的杠杆是"改善工具/环境质量"而不是传统的 rollout selection / prompt filtering [[2511.16108]]。
+- **Seer（严格同步场景下 Scheduling + Speculative Decoding 组合，256×H800，Moonshot AI/清华）**：不引入策略滞后（保持严格同步，对照 [[async-rl-training]]），仅靠"分割推理（块级调度 + 全局共享 KVCache 池）+ 上下文感知调度（近似 LFS）+ 自适应分组投机解码"三件套，相对同步 RL SOTA veRL 端到端推理吞吐提升 **1.53–2.04×**、长尾延迟降低 **72–94%**；改进分解显示分割推理贡献最大单项增量（内存受限任务上最高 42%），上下文调度再加 14%，投机解码在低并发长尾阶段额外贡献 26–48%。上下文感知调度达到 Oracle LFS（完美已知长度）96% 的吞吐水平，说明长度预测误差的影响有限。对比放弃严格同步、超发 2× 请求的 Partial Rollout，Seer 平均吞吐仍高 43%，且指出超发会降低长输出请求比例、可能给训练引入分布偏差——是"用异步/超发换吞吐"这条路径一个具体的反面数据点 [[2511.14617]]。
 - **80 个方法里 50 个只报系统收益、17 个只报算法收益、12 个两者都报**——报告口径高度不对称，跨论文的加速比经常不可比（baseline 选择、阶段边界、吞吐单位、聚合统计量、硬件规格五个来源叠加）[[2609.25463]]。
 - 论文建议的统一比较口径：把两个杠杆都换算成"加速器小时 → 目标质量 $C(q)$ 曲线"，并配五个诊断协议（同等丢弃比例随机对照、增量 ladder、投机接受率随策略漂移曲线、staleness 扫描、匹配 cost 而非匹配 step 数）[[2609.25463]]。
 
@@ -50,13 +52,17 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 ## 开放问题
 
 - 可组合性大部分是机制推导的假设：21 对技术家族组合里只有 2 对有隔离测量的实测增量（AReaL-Hex 在异步 AReaL 基础上叠加异构放置，1.31–1.50×），其余停留在"共同实现但未隔离"或纯假设 [[2609.25463]]。
-- 算法杠杆几乎只在单轮可验证任务上测过：29 个报算法收益的方法里只有 6 个测了交互式/多轮 rollout，这恰好是我们最关心的 agentic/SWE/terminal 场景，可迁移性证据不足 [[2609.25463]]。
+- 算法杠杆几乎只在单轮可验证任务上测过：29 个报算法收益的方法里只有 6 个测了交互式/多轮 rollout，这恰好是我们最关心的 agentic/SWE/terminal 场景，可迁移性证据不足 [[2609.25463]]。RAGEN 补了这方面的一小块证据，但角度不同——它不是"怎么省 rollout 成本"，而是"rollout 的多样性/粒度/新鲜度怎么配置才能不浪费已经花掉的 rollout 预算"：更多不同 prompt（而非同一 prompt 更多响应）泛化更好、每轮动作预算存在甜蜜点（5–6 个）、rollout 越新鲜训练质量越好（详见 [[agentic-rl-training-stability]]）；论文本身也只在小规模符号任务上验证，未触及 SWE-Bench 级别场景 [[2504.20073]]。
 - 文献里没有系统扫过"lag–质量"曲线（多数方法固定一个 lag 值报一个操作点），也没有比较过不同长度预测器在同一工作负载下的表现 [[2609.25463]]。
 
 ## 相关概念
 
-[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]
+[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]、[[agentic-rl-training-stability]]
 
 ## 相关来源
 
 - [[2609.25463]] — 80 方法双重分类综述（机制×瓶颈），提出统一评估口径与可组合性分析，是本页大部分结论的唯一来源
+- [[skyrl-v0]] — SkyRL-v0 博客，agentic/SWE 长程场景下异步 rollout + 三阶段流水线的具体工程实现与 4–5× 加速数字
+- [[2511.16108]] — SkyRL-Agent 论文，量化"异步内继续精细调度"这一档收益（1.55×、90% GPU 利用率），并给出"工具质量本身是 rollout 信号密度杠杆"这一训练配方侧证据
+- [[2504.20073]] — RAGEN/StarPO，多轮 agent 场景下 rollout 多样性/动作预算/新鲜度三个维度的实证发现，是本页"算法杠杆多轮场景证据不足"这一开放问题的又一小块补充
+- [[2511.14617]] — Seer，Scheduling & Load Balancing 与 Speculative Decoding 两个技术家族在严格同步场景下的最新组合实例：用 GRPO 组结构本身做长度探路信号、组内共享上下文做投机解码草稿来源，2.04× 吞吐、72–94% 尾延迟削减，且给出"同步优化 vs 异步/超发"的正面对照数据
