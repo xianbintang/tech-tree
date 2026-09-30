@@ -2,8 +2,8 @@
 title: "Generation-Execution-Feedback (GEF) Loop"
 aliases: [GEF loop, Generation-Execution-Feedback, 环境规模化, environment scaling]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2511.09586, 2509.13311]
+updated: 2026-09-30
+sources: [2511.09586, 2509.13311, 2609.33665]
 ---
 
 # Generation-Execution-Feedback (GEF) Loop
@@ -32,7 +32,7 @@ sources: [2511.09586, 2509.13311]
 **阶段三：反馈（Feedback）**
 
 - 密度（Density）：轨迹级结果奖励（稀疏、训练稳定）vs 步骤级过程奖励（密集、易 reward hacking）；PR-Clip-Delta 用相邻步骤奖励差裁剪缓解不稳定 [[2511.09586]]。
-- 粒度（Granularity）：从二元信号/单一分数演进到 Rubrics as Rewards 的清单式、逐实例评分规则，是二元正确性信号与宽泛偏好排序之间的折中 [[2511.09586]]。
+- 粒度（Granularity）：从二元信号/单一分数演进到 Rubrics as Rewards 的清单式、逐实例评分规则，是二元正确性信号与宽泛偏好排序之间的折中 [[2511.09586]]。**CompoWorld 的 Completion-Focused Rubric Reward 是这条演化线上的一个具体加权方案**：均匀平均每条 rubric（$R^{uniform}=M^{-1}\sum_j b_{ij}$）无法区分"轻松满足的简单条件"和"大家都做不到的关键条件"，于是按组内该条 rubric 的通过率反向加权（$w_j=\lambda+(1-p_j)$），把学习信号集中到未满足的完成度瓶颈上；论文观察到 SFT 之后这类均匀 rubric 分数已经偏高但整体任务通过率仍低，是该加权设计要解决的具体现象 [[2609.33665]]。
 - 自动化（Automation）：LLM-as-a-Judge → 训练专用 reward model → agentic 验证（外部搜索工具核实事实）；自动化会放大 verbosity/position/egocentric 等评委偏见 [[2511.09586]]。**AgentScaler 给出一个完全不依赖 LLM 判分的自动化验证样例**：三级漏斗过滤——格式合法性（轮次交替 + n-gram 去重）→ 数据库最终状态与 gold 状态比对（验证 write 型工具）→ 工具序列/参数精确匹配（覆盖纯 read 型工具，状态比对失效场景）；且刻意保留含工具调用报错的轨迹以提升鲁棒性，而非一律丢弃 [[2509.13311]]。
 - 客观性（Objectivity）：RLVR 在数学/代码等易验证域效果好，创意写作/医疗咨询等域缺乏 ground truth；BRPO 用成对生成式奖励模型规避直接打分创造力，ARE 把参数匹配硬检查与生成式 rubric 软检查结合 [[2511.09586]]。
 - 鲁棒性（Robustness）：奖励层面防噪声（软概率化奖励）与防 hacking（overseer 评估动作未来效用）；环境层面防崩溃/延迟/工具输出损坏（Trinity-RFT 用异步推理+重试，Tongyi DeepResearch 用缓存+重试+切换 provider）[[2511.09586]]。
@@ -65,3 +65,4 @@ sources: [2511.09586, 2509.13311]
 
 - [[2511.09586]] — 提出 GEF loop 三阶段分类法，系统盘点环境规模化方法；SWE-bench 解决率随任务/轨迹规模提升的量化证据是本页核心工程数字来源
 - [[2509.13311]] — 给出"数据库化工具环境"的完整自动化构建 + 三级过滤验证实现，是交互性规模化与自动化反馈两个维度的具体工程样本
+- [[2609.33665]] — 提出 Completion-Focused Rubric Reward，是反馈阶段"粒度（Granularity）"维度里 Rubrics as Rewards 演化线的具体加权实现
