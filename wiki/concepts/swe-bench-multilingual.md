@@ -2,8 +2,8 @@
 title: "SWE-bench Multilingual"
 aliases: [SWE-bench Multilingual]
 created: 2026-09-25
-updated: 2026-09-25
-sources: [2609.23377]
+updated: 2026-09-30
+sources: [2609.23377, 2602.23866]
 ---
 
 # SWE-bench Multilingual
@@ -19,6 +19,7 @@ sources: [2609.23377]
 ## 核心机制 / 主要变体
 
 - 共 300 个任务，覆盖 9 种编程语言，是 [[swe-bench-pro]]（纯 Python）之外检验跨语言泛化的基准 [[2609.23377]]。
+- [[swe-rebench-v2]] 在其 setup synthesis 消融实验中，从 SWE-bench、SWE-bench Multilingual、Multi-SWE-Bench 三个来源抽样出覆盖 10 种语言的 103 个仓库子集，把这里的人工验证任务转成自己的 pipeline 格式当 ground truth，用来对比自动化 setup agent 与人工设置的一致性 [[2602.23866]]。
 
 ## 工程要点与数字
 
@@ -34,8 +35,9 @@ sources: [2609.23377]
 
 ## 相关概念
 
-[[swe-bench-pro]]、[[category-aware-expert-training]]
+[[swe-bench-pro]]、[[category-aware-expert-training]]、[[swe-rebench-v2]]
 
 ## 相关来源
 
 - [[2609.23377]] — 用作跨语言泛化验证基准
+- [[2602.23866]] — 抽样部分任务作为 setup synthesis 消融实验的人工验证 ground truth
