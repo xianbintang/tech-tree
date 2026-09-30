@@ -2,8 +2,8 @@
 title: "Rollout/Training 分离调度（Rollout-Training Disaggregation）"
 aliases: [rollout-training disaggregation, rollout/训练分离, 异步 RL 资源拆分, elastic rollout]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2026-09-29-moe-rl-eks-efa-deepep]
+updated: 2026-09-30
+sources: [2026-09-29-moe-rl-eks-efa-deepep, 2409.19256, 2506.06122]
 ---
 
 # Rollout/Training 分离调度
@@ -23,6 +23,8 @@ sources: [2026-09-29-moe-rl-eks-efa-deepep]
 - **设计要点**：rollout worker 应处理有界（bounded）的工作单元、频繁发布已完成样本；收到 Spot 中断通知时，worker 排空（drain）在途请求、把未完成任务退回队列 [[2026-09-29-moe-rl-eks-efa-deepep]]。
 - **调度层面按队列深度独立伸缩**：基于 EKS，可以按 rollout 需求和队列深度独立伸缩 Spot-based rollout node group，同时为 policy training 维持稳定容量；policy-training worker 因此不受 Spot 中断、延迟或 NCCL 超时影响 [[2026-09-29-moe-rl-eks-efa-deepep]]。
 - **三层独立伸缩的整体架构**：编排（EKS 控制面：调度、扩缩容、故障恢复）、跨节点高性能通信（NVLink 管节点内、EFA 管节点间）、数据层（经验缓冲区做高频读写的非持久层 + S3 做 checkpoint/训练产物的持久层）三者解耦，各自独立扩缩容 [[2026-09-29-moe-rl-eks-efa-deepep]]。
+- **colocate（同设备复用）是"分离"的对立选项，而非必然更优**：[[hybridflow]]（veRL）的 3D-HybridEngine 走的是相反路线——让 actor 训练和生成共享同一份权重、同一组 GPU，通过零冗余 resharding 消除权重同步开销，而不是把两者拆到不同资源池。其 Auto Device Mapping 实测（PPO，7B\~70B，16\~128 GPU）显示：16\~64 GPU 时 colocate 全部模型吞吐最高；规模扩大到 96\~128 GPU 后 split/standalone（即分离部署）才反超，是因为 colocate 下固定 batch size 导致计算/通信比随 DP size 增大而下降 [[2409.19256]]。这给"disaggregation 的开放问题：资源配比该如何随规模调整"提供了一个有实验数据支撑的判断依据：**分离调度的收益门槛与集群规模、模型大小相关，不是在所有规模下都成立**，小规模时 colocate 可能比拆分资源池更省资源。
+- **第三种取舍：把 colocate/disaggregate 做成可配置项，而不是二选一架构决策**：[[2506.06122]]（ROLL，阿里）的 AutoDeviceMapping 允许用户自定义设备映射，训练与生成阶段既可以共享同一批设备，也可以完全不 colocate——不 colocate 时靠 `ModelUpdateGroup`（NCCL）做参数同步而不依赖共享权重副本。论文没有给出 colocate vs disaggregate 在 ROLL 里的吞吐对比数字，因此**它证明了"两种模式可以在同一套系统里并存并由用户按场景选择"是工程可行的，但没有回答"什么场景该选哪种"**——这一点上不如 [[hybridflow]] 给出的规模-placement 实验数据具体 [[2506.06122]]。
 
 ## 工程要点与数字
 
@@ -41,8 +43,10 @@ sources: [2026-09-29-moe-rl-eks-efa-deepep]
 
 ## 相关概念
 
-[[expert-parallelism]]、[[deepep]]
+[[expert-parallelism]]、[[deepep]]、[[hybridflow]]
 
 ## 相关来源
 
 - [[2026-09-29-moe-rl-eks-efa-deepep]] — AWS 博客，提出 EKS 上按中断容忍度拆分 rollout（Spot）与 training（稳定容量）资源池的架构模式
+- [[2409.19256]] — HybridFlow/veRL，提供 colocate vs split/standalone 在不同 GPU 规模下的实测吞吐对比，是"何时该分离调度"的量化参照
+- [[2506.06122]] — ROLL 原始论文，展示把 colocate/disaggregate 做成用户可配置项的第三种设计取舍，但未给出两种模式的量化对比
