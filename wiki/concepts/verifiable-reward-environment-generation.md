@@ -2,8 +2,8 @@
 title: "可验证奖励的 agentic 环境生成"
 aliases: [verifiable reward environment generation, agentic environment synthesis, RL 环境自动构造, large-scale agent task synthesis]
 created: 2026-09-25
-updated: 2026-09-29
-sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969, 2609.22000]
+updated: 2026-09-30
+sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969, 2609.22000, 2504.07164, 2505.20411]
 ---
 
 # 可验证奖励的 agentic 环境生成
@@ -26,6 +26,8 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 - **"工具即数据库读写"环境先行方案（AgentScaler，[[2509.13311]]）**：把 function-calling 环境的构造问题转化为"工具依赖图建模（参数向量相似度 + LLM 校验边）→ Louvain 社区发现划分领域 → 每个领域生成数据库 schema + 可执行工具代码"的自动化流水线，从 3 万+ API 里划出 1,000+ 领域；验证靠数据库状态比对（write 型工具）+ 工具序列精确匹配（read 型工具）两个粒度，无需 LLM-as-judge 介入。是"环境先行"范式里少见的、给出完整自动化工具链（而非仅方法论）的具体实现 [[2509.13311]]。
 - **三元组形式化 + agent 协作质检（DeepSeek-V4.1-Flash 的方案）**：把每个任务形式化为 (problem, environment, verification system) 三元组，用"难度"和"正确性"两个维度做奖励信号迭代训练模型自己构造任务，并在任务被 RL 消费后用产生的轨迹反过来做质量复审。Coding agent 场景下是多个专职 agent 接力的流水线：判断项目能否容器化构建与验证 → 选定起点/设计实现方向/产出 fail-to-pass 与 pass-to-pass 评测点 → 独立 agent 搭建依赖与工作目录、打包成新镜像层并抹除解答痕迹 → 多个 agent 尝试解题 → 独立质检 agent 复查环境与轨迹（环境问题、事实错误、评测点不匹配、可被 hack 风险）→ 不通过则由修复 agent 修正、重新进入验证 [[2609.19969]]。这条路线和 VHD-Play 的"机制先行"不同：不依赖任务能被形式化为数学模型，而是靠"真实交互数据先行 + 多 agent 协作质检收尾"来保证质量，覆盖面更广但质检成本更依赖 agent 能力本身。
 - **参考先行（reference-grounded，[[recreation-bench]] 的方案）**：不构造数学模型，而是拿一个真实存在、可运行的参考应用/网站作为"标准答案"——agent 复现它，验证时用编排器探索参考应用生成"程序化断言 + VLM 视觉判定"双通道测试。这类方法适用于无法形式化为数学模型的开放式界面/软件任务，验证依据是"参考系统的可观察行为"而不是求解得到的最优解 [[2609.22000]]。
+- **commit 反向翻译（commit-first / backtranslation-grounded，R2E-Gym 的 SWEGen 方案）**：不依赖人工撰写的 GitHub issue，而是反过来从代码修复 commit 出发——先用规则+LLM 过滤筛出高质量 commit 并 Docker 化搭建可执行仓库环境，收集/生成对应的 Fail→Pass 测试，再把"失败测试 + 执行 trace + assertion 失败信息"喂给 LLM 反向翻译出拟人工撰写的 issue 描述。这条路线的准入校验就是 F2P/P2P 测试本身（继承自 SWE-bench 范式），不需要额外的数学模型或 skill 模板；核心贡献是把"issue 撰写"这一此前认为必须由人工完成的环节自动化，用 8.1K 任务规模（超过依赖人工 issue 的 SWE-Gym 3 倍以上）验证了合成 issue 训出的模型（27.8% PASS@1）与真实 issue（28.0%）几乎打平 [[2504.07164]]。
+- **真实 issue/PR 挖矿先行（issue-mining-grounded，SWE-rebench 的方案）**：与 SWEGen 的合成 issue 相反，完全依赖 GitHub 上真实存在的、已合并 PR 关联的人工撰写 issue——从 GitHub Archive + 仓库克隆挖出约 45 万条候选 PR，规则过滤到 15.34 万，再用 LLM agentless 方式（Qwen2.5-72B-Instruct 读 README/Dockerfile/setup.py）生成安装 recipe、Docker 容器执行 F2P/P2P 验证，最后额外加一道"自动化任务质量评估"关卡：用 SWE-bench Verified 的 3,800 条人工标注微调分类器，给每个任务打 Issue Clarity / Task Complexity / Test Patch Correctness 三个质量标签，作为元数据供下游筛选,而不是像 SWE-bench Verified 那样纯人工逐条验收。规模化到 21,336 个任务、3,468 个仓库，是三条"环境先行"具体实现（AgentScaler 工具依赖图、R2E-Gym commit 反向翻译、SWE-rebench issue 挖矿）里唯一"零合成、纯挖矿+LLM质检"的路线 [[2505.20411]]。
 
 ## 工程要点与数字
 
@@ -36,10 +38,12 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 - AgentScaler 流水线规模：3 万+ API → 1,000+ 领域，但论文**未披露**构建这些领域/数据库 schema 的算力成本、耗时、单领域存储开销——与 VHD-Play 的量化成本形成对比，是这条"环境先行"路线里成本可见度的已知缺口 [[2509.13311]]。
 - DeepSeek-V4.1-Flash 的两条产线未披露单条环境成本或全库规模数字，但明确了两个数据来源：coding agent 环境一部分来自内部/外部真实 coding agent 会话（按轨迹去重、过滤高复杂度或模型表现差的任务），另一部分来自达到 star 数阈值的公开 GitHub 仓库 [[2609.19969]]。
 - [[recreation-bench]] 的双通道验证不需要预先形式化数学模型，但对基础设施要求更重：每个验证周期要跑一个版本化 VM worker 探索/重放参考应用，还引入 VLM 判定这一额外成本项（论文未披露测试生成阶段本身的成本，只披露了下游 agent 评测的资源消耗） [[2609.22000]]。
+- R2E-Gym（SWEGen）同样**未披露**单任务的 Docker 环境构建耗时、镜像大小、并发密度——仓库安装作者自陈"半人工、难以规模化"，是这类"从真实代码库反推任务"路线里成本可见度的又一个缺口，与 AgentScaler 的情况类似 [[2504.07164]]。
+- SWE-rebench 同样**未披露**完整的算力/存储成本，但给出了另一类可量化数字——质检产出率与质检准确率：约 45 万候选 PR 经规则过滤到 15.34 万，LLM agentless 安装配置只在 31% 的仓库里至少为一个任务生成出可用 recipe（说明规则+安装两道关卡合计淘汰了绝大多数候选）；质量分类器在 413 条验证集上的准确率分别为 Task Complexity 81%、Issue Clarity 79%、Test Patch Correctness 仅 67%——是目前唯一给出"自动化质检环节本身准确率"这一数字的路线，可与 [[benchmark-item-validity-audit]] 讨论的 verifier 侧审计互为参照 [[2505.20411]]。
 
 ## 争议与矛盾
 
-（暂无跨来源分歧；七篇来源视角互补，未见结论冲突。四条主线各有侧重且适用场景不同，互为补充而非竞争：VHD-Play（机制先行）与 AgentScaler（环境先行 + 工具依赖图自动化）面向可形式化为数学模型或已有明确 API/工具边界的任务；SkillGym（skill-模板先行）面向 SWE/terminal/办公等不可形式化的开放式任务，用对比 skill 依赖性测试替代数学最优解校验；DeepSeek-V4.1-Flash（三元组形式化 + agent 协作质检）面向真实交互数据驱动的通用/coding agent 任务；[[recreation-bench]]（参考先行）面向无法形式化、依赖真实参考应用的开放式界面/软件任务；[[2509.02547]]、[[2511.09586]] 则是站在更高层给出"自动化 reward 设计 / 自动化课程生成"的方法论综述与 [[generator-verifier-asymmetry]] 核心挑战框架，覆盖上述各条具体路线）
+（暂无跨来源分歧；九篇来源视角互补，未见结论冲突。六条主线各有侧重且适用场景不同，互为补充而非竞争：VHD-Play（机制先行）与 AgentScaler（环境先行 + 工具依赖图自动化）面向可形式化为数学模型或已有明确 API/工具边界的任务；SkillGym（skill-模板先行）面向 SWE/terminal/办公等不可形式化的开放式任务，用对比 skill 依赖性测试替代数学最优解校验；DeepSeek-V4.1-Flash（三元组形式化 + agent 协作质检）面向真实交互数据驱动的通用/coding agent 任务；[[recreation-bench]]（参考先行）面向无法形式化、依赖真实参考应用的开放式界面/软件任务；R2E-Gym / SWEGen（commit 反向翻译）与 SWE-rebench（issue/PR 挖矿先行）同属 SWE 垂直领域但路线相反——SWEGen 靠自动化 commit 挖掘+backtranslation 合成 issue，几乎不需要人工介入但代价是"issue 描述由 LLM 反推、可能与真实开发者表达有细微差异"；SWE-rebench 坚持只用真实人工撰写的 issue，代价是任务供给速率受限于 GitHub 社区实际产出，但换来了"issue 语言 100% 真实"和一套针对性更强的自动化质检（Appendix G 四处修正 + 三维质量分类器），两者可以看作"合成式 vs 挖矿式"规模化在同一垂直领域的直接对照；[[2509.02547]]、[[2511.09586]] 则是站在更高层给出"自动化 reward 设计 / 自动化课程生成"的方法论综述与 [[generator-verifier-asymmetry]] 核心挑战框架，覆盖上述各条具体路线）
 
 ## 开放问题
 
@@ -48,10 +52,12 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 - AgentScaler 的工具依赖图+社区发现方法能否在我们自己的内部 API 池上小规模复现，评估自动划分领域的质量和人工介入成本（follow-up，见 [[2509.13311]] 笔记）。
 - DeepSeek-V4.1-Flash 路线的"agent 协作质检"本身的准确率/漏检率未披露——质检 agent 能在多大程度上真的拦住环境问题、评测点不匹配、可 hack 风险，缺乏量化 [[2609.19969]]。
 - [[recreation-bench]] 的参考先行方案目前只用于评测基准构造，尚未看到把"程序化+VLM 双通道验证"直接接入 RL 训练奖励回路（而非离线评测）的实证 [[2609.22000]]。
+- R2E-Gym 的 commit 反向翻译流程里"仓库安装"环节作者自陈半人工、难以规模化，具体自动化程度、故障率、单仓库平均耗时均未披露，是这条路线里工程可行性评估的已知缺口（follow-up，见 [[2504.07164]] 笔记）。
+- SWE-rebench 的三维质量分类器准确率不高（Test Patch Correctness 仅 67%），发布的质量标签本身带噪声；论文未做标签噪声对下游 RL 训练效果的敏感性分析，也未披露端到端算力/存储总成本，与其余路线的成本缺口一致（follow-up，见 [[2505.20411]] 笔记）。
 
 ## 相关概念
 
-[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）
+[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）、[[repolaunch]]
 
 ## 相关来源
 
@@ -62,3 +68,5 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 - [[2509.13311]] — 给出"工具即数据库读写"的完整自动化环境构建流水线（工具依赖图 + Louvain 社区发现 + 数据库 schema 物化），是环境先行范式的具体工程实现
 - [[2609.19969]] — 给出"真实交互先行 + 多 agent 协作质检"的生产级环境合成流水线（§5.1.1），覆盖通用 agent 与 coding agent 两条产线
 - [[2609.22000]] — 提出"参考先行"验证范式，用真实参考应用 + 程序化/VLM 双通道断言构造 RecreationBench
+- [[2504.07164]] — 提出"commit 反向翻译"环境生成范式（SWEGen/R2E-Gym），用 8.1K SWE 任务规模验证合成 issue 训练效果与真实 issue 持平
+- [[2505.20411]] — 提出"issue/PR 挖矿先行"环境生成范式（SWE-rebench），全自动挖掘真实 issue/PR + LLM 安装配置 + 三维质量分类器质检，规模化到 21,336 任务
