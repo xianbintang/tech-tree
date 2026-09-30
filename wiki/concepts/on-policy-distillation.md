@@ -1,9 +1,9 @@
 ---
 title: "On-Policy 蒸馏（含多教师场景 MOPD）"
-aliases: [on-policy distillation, MOPD, Multi-teacher On-Policy Distillation, 多教师蒸馏, 标签路由蒸馏, 全词表 OPD]
+aliases: [on-policy distillation, MOPD, Multi-teacher On-Policy Distillation, 多教师蒸馏, 标签路由蒸馏, 全词表 OPD, reverse-KL 蒸馏]
 created: 2026-09-25
-updated: 2026-09-27
-sources: [2609.23377, 2609.19969]
+updated: 2026-09-30
+sources: [2609.23377, 2609.19969, 2601.02780]
 ---
 
 # On-Policy 蒸馏（含多教师场景 MOPD）
@@ -24,6 +24,7 @@ sources: [2609.23377, 2609.19969]
 - 在 [[2609.23377]] 的具体应用（MOPD）中，这一机制被用来把 [[category-aware-expert-training]] 训练出的三个类别专家整合为一个部署策略。
 - **大规模异构教师场景**：[[2609.19969]] 把全词表 OPD 作为 post-training 的最后一步，用**超过 40 个教师模型**、跨所有领域数据集训练；与 MOPD 里"教师和学生共享同一基础模型、按标签路由"不同，这里教师模型之间、教师与学生之间**架构可以互不相同**，不同领域的最佳教师可能来自模型开发的不同阶段。基础设施需要支持有效无上限数量、架构异构的教师之间高效切换 [[2609.19969]]。
 - **训练中的动态重配置**：全词表 OPD 阶段需要持续跟踪模型能力并调整训练配置（数据集配比、按数据集的并发限流、激活的教师集合）；同步训练下配置切换的边界很明确（按 batch），但在异步生成场景下，不同配置产生的样本可能同时在途，基础设施需要保证配置切换的一致性过渡而不打断 rollout 或训练 [[2609.19969]]。
+- **三阶段 MOPD（reverse-KL + importance-sampling 截断）**：[[2601.02780]]（MiMo-V2-Flash）也把自己的多教师蒸馏方法命名为 MOPD，但技术方案与 [[2609.23377]] 完全不同——① SFT 打基础，② 对 agentic/非 agentic 各能力域独立跑 RL/SFT 训出领域教师，③ 学生按自己当前策略采样，教师对同一轨迹逐 token 打 reverse-KL 形式的奖励，再用 training-inference importance sampling 丢弃比值超出 $[\epsilon_{low},\epsilon_{high}]$ 的 token 做截断修正，可选地把这个 MOPD advantage 直接与 [[grpo]] 风格的 ORM outcome advantage 相加。教师同样可以是 RL 模型、SFT 模型或学生自己，同源共享基础模型不是必需条件 [[2601.02780]]。
 
 ## 工程要点与数字
 
@@ -31,21 +32,24 @@ sources: [2609.23377, 2609.19969]
 - 论文强调"教师和学生共享相同基础模型，路由基于观察到的标签"（同源教师监控），没有引入额外的异构教师模型 [[2609.23377]]。
 - 具体的批次配置、教师推断与学生生成的调度细节、算力成本，论文未披露 [[2609.23377]]。
 - [[2609.19969]] 的全词表 OPD 同样采用异步生成来提升 rollout 效率，与该论文 §5.2 描述的异步 post-training 基础设施（sample 级 dispatch、off-policy loss masking、token 级中断续跑）共用同一套系统，说明 OPD 阶段和常规 RL 阶段可以复用同一套异步 rollout 基础设施，不需要为蒸馏单独搭建流水线 [[2609.19969]]。
+- [[2601.02780]] 的三阶段 MOPD 效果（12 个基准里 9 个超过各自最强教师，如 AIME 2025 从教师 93.9 分提到学生 94.1 分），但 GPQA-Diamond、Arena-Hard Creative Writing、SWE-Bench Verified、BrowseComp 4 个基准出现小幅下降（BrowseComp 掉 6.3 分最明显），论文未解释原因 [[2601.02780]]。
 
 ## 争议与矛盾
 
-（暂无跨来源分歧，仅一篇来源）
+- **"MOPD" 是两个不同技术方案共用的名字**：[[2609.23377]] 的 MOPD 是"标签路由 + ReLU 门控奖励外推"，教师和学生共享同一基础模型、按输入标签动态选择监督来源；[[2601.02780]] 的 MOPD 是"reverse-KL 逐 token 蒸馏奖励 + importance-sampling 截断"，教师可以是任意独立训练的领域专精模型，不要求同源。两篇论文互不引用，看不出谁先提出这个名字，读到 "MOPD" 时必须先确认引用的是哪一篇的定义。
 
 ## 开放问题
 
 - MOPD 蒸馏后是否所有专家的收益都被保留，[[2609.23377]] 自己承认答案是否定的（部分类别收益会在整合中丢失），但没有量化丢失比例或给出改进方向。
 - 教师数量增多（不止 3 个类别专家）时，ReLU 门控奖励外推的信号冲突处理是否还有效，未见验证。
+- [[2601.02780]] 的 reverse-KL MOPD 为什么会在 4 个基准上相对最强教师出现回退，论文未分析，也没有讨论是否存在更优的教师选择或权重调整方式。
 
 ## 相关概念
 
-[[category-aware-expert-training]]
+[[category-aware-expert-training]]、[[grpo]]
 
 ## 相关来源
 
 - [[2609.23377]] — 提出 MOPD（标签路由 + ReLU 门控奖励外推），用于整合类别专家为单一部署策略
 - [[2609.19969]] — 在生产级规模上用超过 40 个架构异构教师做全词表 OPD，作为 post-training 最后一步，并给出与异步 rollout 基础设施共享的工程细节
+- [[2601.02780]] — 提出同名但技术方案不同的三阶段 MOPD（reverse-KL 逐 token 蒸馏奖励 + importance-sampling 截断，可与 GRPO 风格 ORM advantage 相加），用于整合 agentic/非 agentic 领域教师

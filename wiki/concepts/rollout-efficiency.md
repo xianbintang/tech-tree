@@ -2,8 +2,8 @@
 title: "Rollout Efficiency（Rollout 效率）"
 aliases: [rollout efficiency, rollout-efficiency taxonomy, rollout 成本优化]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, 2505.07608, 2601.02780]
 ---
 
 # Rollout Efficiency（Rollout 效率）
@@ -39,6 +39,8 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 
 - 生产推理轨迹上的同步测量：rollout 占单步墙钟时间基础工作负载 49%，长 CoT 变体 58%（作者自测，Figure 1）；文献里其他测量给出 70%、85%、长输出场景 >90% [[2609.25463]]。
 - 系统杠杆代表数字：AReaL（1.5B–32B）吞吐 2.77×；LlamaRL（405B）单步 10.7×；RollPacker 端到端 2.03–2.56×；DeepScaleR 用递增 context（8K→16K→24K）把训练算力从估算 70000 A100-小时压到约 3800；ESPO 提前停止减少 rollout token >20% 且提升准确率 [[2609.25463]]。
+- **调度与负载均衡的生产实例——MiMo 的 Seamless Rollout Engine**（256×H20 GPU 实测）：取消 rollout/reward 同步屏障（continuous rollout）+ 代码判分单独走异步 Ray 任务（async reward computation）+ FIFO 式提前终止（early termination，只掐掉晚发起的任务），三者叠加相对 naive dynamic sampling 基线达到 **2.29× 训练加速、2.61× rollout 加速**，GPU 空闲率从 69.3% 降到 27.7%，样本浪费率从 22.1% 降到 12.9%；验证阶段单独测得 1.96× 加速，空闲率从 65.8% 降到 32.9%。三个组件都不改变采样分布或算法，是纯执行层优化 [[2505.07608]]。
+- **同一团队后续模型（MiMo-V2-Flash）的 Data Scheduler**：在上述 Seamless Rollout Engine 基础上扩展，改按细粒度序列而非 micro-batch 调度，动态采样按历史通过率做负载均衡分配新 prompt，并集成 partial rollout（超长轨迹跨训练步切分）+ staleness-aware truncated importance sampling——属于 Partial & Early-Stop Rollout 类别，但**论文没有给出相对 Seamless Rollout Engine 的量化加速数字**，只有架构描述，是该团队这一代报告在工程量化上相对上一代的明显退步 [[2601.02780]]。同一报告里另有一个纯计算强度层面的加速手段：Multi-Token Prediction 把并行度从 batch 维度转移到 token 维度，缓解小 batch on-policy RL 的 GPU 利用率不足与长尾 straggler，详见 [[async-rl-training]] [[2601.02780]]。
 - 算法杠杆代表数字：GRESO rollout 提速 2.4×、最多减少 3.35× rollout，质量持平；POPO 用 replay 达到过采样基线效果只需约 30% rollout 预算；KGPS 显式建模非平稳性，比动态采样减少 83% rollout [[2609.25463]]。
 - **80 个方法里 50 个只报系统收益、17 个只报算法收益、12 个两者都报**——报告口径高度不对称，跨论文的加速比经常不可比（baseline 选择、阶段边界、吞吐单位、聚合统计量、硬件规格五个来源叠加）[[2609.25463]]。
 - 论文建议的统一比较口径：把两个杠杆都换算成"加速器小时 → 目标质量 $C(q)$ 曲线"，并配五个诊断协议（同等丢弃比例随机对照、增量 ladder、投机接受率随策略漂移曲线、staleness 扫描、匹配 cost 而非匹配 step 数）[[2609.25463]]。
@@ -55,8 +57,10 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 
 ## 相关概念
 
-[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]
+[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]、[[test-difficulty-driven-reward]]
 
 ## 相关来源
 
 - [[2609.25463]] — 80 方法双重分类综述（机制×瓶颈），提出统一评估口径与可组合性分析，是本页大部分结论的唯一来源
+- [[2505.07608]] — 提供调度与负载均衡类系统杠杆的生产级实例（Seamless Rollout Engine：continuous rollout + async reward + early termination），256×H20 实测加速比与 GPU 空闲率数字
+- [[2601.02780]] — Data Scheduler：在 Seamless Rollout Engine 基础上扩展的细粒度序列调度 + partial rollout（无量化数字）；另给出 MTP 加速小 batch on-policy RL 的独立机制

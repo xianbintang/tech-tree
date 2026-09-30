@@ -2,8 +2,8 @@
 title: "Agentic RL 环境与基准全景"
 aliases: [agentic RL environments, agent RL 训练环境, agentic RL benchmarks]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2509.02547, 2511.09586]
+updated: 2026-09-30
+sources: [2509.02547, 2511.09586, 2601.02780]
 ---
 
 # Agentic RL 环境与基准全景
@@ -26,6 +26,8 @@ sources: [2509.02547, 2511.09586]
 - **领域特定环境**：科研（PaperBench 复现 ICML 论文）、MLE（MLE-Dojo/MLE-Bench 基于真实 Kaggle 竞赛）、生物医学（MedAgentGym）、网络安全（SecRepoBench，27 个仓库、15 类 CWE）[[2509.02547]]。
 - **模拟与游戏环境**：Crafter/Craftax（2D 开放世界生存游戏，Craftax 用 JAX 做 GPU 加速）、SMAC/SMAC-Hard（StarCraft II 多智能体协作）、**Factorio**（tick-based 工业模拟，agent 不动作时世界仍在演化——是少数"动态"环境的代表）[[2509.02547]]。
 - **通用环境**：AgentGym（指令微调 + 自我纠正提升泛化）、Agentbench（跨 SQL/游戏/网页等多种场景的广谱评测框架）、InternBootcamp（1000+ 可验证推理任务，标准化 RL 训练接口）[[2509.02547]]。
+- **生产级代码 agent 环境的完整流水线实例（MiMo-V2-Flash）**：超过 100,000 个源自真实 GitHub issue 的代码任务，核心基础设施是**自动化环境搭建流水线**——从仓库快照拉起开发环境、打包成容器镜像，覆盖 8 种编程语言，成功率 70%，跑在 10,000+ 并发 pod 的 Kubernetes 集群上；配套一个只暴露 `bash`/`str_replace`/`finish` 三个原子工具的轻量 agent scaffold，通过 shell 命令对接 Kubernetes/Docker/本地后端，不用服务端工具实现、系统提示词极简不预设工作流。在约 120K 个环境上做 on-policy rollout 后，代码 agentic RL 训练效果能泛化到数学、通用推理等非 agentic 任务 [[2601.02780]]。
+- **Terminal / Web Dev / General 三类补充环境（MiMo-V2-Flash）**：Terminal Agent 从 Stack Overflow/Stack Exchange 提炼高门槛问题转成带 Dockerfile 和测试用例的任务，过滤后约 30,000 条有效查询；Web Dev Agent 用 Playwright 执行生成代码得到渲染视频、多模态视觉判别器筛选样本（视频比静态截图更能降低视觉幻觉误判）；General Agent 拆成搜索（`search`/`open`/`find` 三工具 + 递归事实图谱生成难度可控查询）和工具调用（显式数据依赖 + 隐式逻辑依赖构造 tool-call graph）两支 [[2601.02780]]。
 
 ## 工程要点与数字
 
@@ -33,6 +35,7 @@ sources: [2509.02547, 2511.09586]
 - **静态 vs 动态是调度设计的关键区分**：绝大多数环境（WebArena、OSWorld 等）状态仅随 agent 动作改变，可视为"请求驱动"资源；Factorio 是明确反例——tick 制世界持续演化，需要常驻后台进程而非"空闲即挂起" [[2509.02547]]。
 - 论文**未披露**各环境的具体冷启动时间、镜像大小、并发密度等我们最关心的工程数字——这是这份全景图的已知缺口，需要逐个环境回到原始仓库调研 [[2509.02547]]。
 - **SWE 方向有量化的规模效应证据**：SWE-Gym-32B（2,438 任务，真实仓库）SWE-bench 解决率 20.6% → R2E-Gym-32B（8,135 任务，程序化合成）34.4% → SWE-Smith-32B（50,137 任务，真实+合成混合）40.2%——任务/轨迹规模每提升一个数量级，下游解决率显著提升，是"环境规模化"论点少有的直接量化支撑 [[2511.09586]]。
+- **环境搭建流水线的成功率是稀缺的量化数字**：MiMo-V2-Flash 的仓库快照→容器镜像自动化流水线在 8 种编程语言上成功率 70%——这是本页少有的"环境构造本身能跑通多少比例"的实测数字（多数环境论文只报下游任务表现，不报环境构造成功率），但论文未说明剩余 30% 失败任务如何处理（丢弃/重试/计入负样本），也未披露万级并发 pod 集群的具体规模与成本 [[2601.02780]]。
 
 ## 争议与矛盾
 
@@ -52,3 +55,4 @@ sources: [2509.02547, 2511.09586]
 
 - [[2509.02547]] — Table 10 系统盘点约 43 个开源 Agentic RL 环境/基准
 - [[2511.09586]] — 提供 SWE 方向环境规模化的量化证据（任务/轨迹规模 vs SWE-bench 解决率），并给出 GEF loop 分类法（见 [[gef-loop]]）
+- [[2601.02780]] — 生产级代码/终端/网页/通用 agent 环境完整案例，给出仓库快照→容器镜像自动化流水线的成功率与集群规模数字
