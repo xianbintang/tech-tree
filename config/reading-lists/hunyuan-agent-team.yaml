@@ -18,3 +18,82 @@ categories:
       - {type: paper, id: "2509.02547", title: "The Landscape of Agentic Reinforcement Learning for LLMs: A Survey", url: "https://arxiv.org/abs/2509.02547", why: "agentic RL 全景（TMLR 2026，95 页）：方法、环境、框架的分类法；重点看环境与框架章节"}
       - {type: paper, id: "2511.09586", title: "Environment Scaling for Interactive Agentic Experience Collection: A Survey", url: "https://arxiv.org/abs/2511.09586", why: "专讲环境规模化：环境构造、交互数据收集，对应岗位②与沙盒平台的接口"}
       - {type: paper, id: "2509.13311", title: "Towards General Agentic Intelligence via Environment Scaling", url: "https://arxiv.org/abs/2509.13311", why: "用扩充环境提升通用 agent 能力的具体方法：环境怎么批量造、怎么验证"}
+
+  - key: B
+    title: "岗位② · 环境接入标准与交互规范"
+    description: |
+      弄清「环境」这个接口该怎么定义：env spec、reset / step、验证器、任务打包与分发、多轮模拟用户、多 OS 桌面环境。
+      精读时整理：每个框架的环境生命周期（创建 → reset → step → 验证 → 销毁）落到沙盒上是什么调用、
+      对时延 / 并发 / 镜像 / 网络 / 快照的要求；哪些环境根本不需要重沙箱（如程序化生成的 Reasoning Gym）。
+      对照 [[2609.22978]]（DSec）的 API 设计，标出沙盒平台需要暴露的接口。
+    items:
+      - {type: post, id: openenv, title: "OpenEnv（Meta PyTorch × Hugging Face）", url: "https://huggingface.co/blog/openenv", why: "面向 RL 训练的环境接口标准与环境即服务，② 设计接口时的直接参照"}
+      - {type: post, id: prime-intellect-verifiers, title: "Prime Intellect verifiers / Environments Hub", url: "https://github.com/PrimeIntellect-ai/verifiers", why: "环境 + 验证器的打包与分发规范"}
+      - {type: post, id: harbor-framework, title: "Harbor（Terminal-Bench 团队的 agent 评测 / 环境框架）", url: "https://github.com/laude-institute/harbor", why: "容器化任务格式、评测与 RL rollout 的统一运行框架"}
+      - {type: paper, id: "2601.11868", title: "Terminal-Bench: Benchmarking Agents on Hard, Realistic Tasks in Command Line Interfaces", url: "https://arxiv.org/abs/2601.11868", why: "任务 + 容器环境 + 测试的规范化格式（DSec 也引用，见 #28）"}
+      - {type: paper, id: "2406.12045", title: "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains", url: "https://arxiv.org/abs/2406.12045", why: "「多轮用户环境」的代表：模拟用户 + 工具 + 策略约束"}
+      - {type: paper, id: "2404.07972", title: "OSWorld: Benchmarking Multimodal Agents for Open-Ended Tasks in Real Computer Environments", url: "https://arxiv.org/abs/2404.07972", why: "基于 VM 的 Linux / Windows / macOS 桌面环境，对应沙盒平台的多 OS 需求"}
+      - {type: paper, id: "2308.03688", title: "AgentBench: Evaluating LLMs as Agents", url: "https://arxiv.org/abs/2308.03688", why: "异构环境（OS / DB / 网页 / 游戏）统一接入的早期实践"}
+      - {type: paper, id: "2505.24760", title: "Reasoning Gym: Reasoning Environments for Reinforcement Learning with Verifiable Rewards", url: "https://arxiv.org/abs/2505.24760", why: "程序化生成、可验证的轻量环境（不需要重沙箱的一类）"}
+
+  - key: C
+    title: "岗位② · 任务 / 数据集规模化构造、质量与防作弊"
+    description: |
+      以 SWE 为代表，看任务与环境镜像怎么批量造、怎么验证、怎么去污染、怎么防 reward hacking。
+      精读时整理：每条流水线里镜像构建的数量级、单镜像大小、构建失败率、验证耗时，以及对镜像仓库 / 分发 /
+      构建集群的压力；reward hacking 的具体手法里哪些要靠沙盒层（文件系统、网络、进程可见性）来堵。
+      对照 [[2609.19969]]（V4.1-Flash §5.1.1 任务合成）与 [[verifiable-reward-environment-generation]]。
+    items:
+      - {type: paper, id: "2412.21139", title: "SWE-Gym: Training Software Engineering Agents and Verifiers", url: "https://arxiv.org/abs/2412.21139", why: "可执行 SWE 训练环境与验证器"}
+      - {type: paper, id: "2504.21798", title: "SWE-smith: Scaling Data for Software Engineering Agents", url: "https://arxiv.org/abs/2504.21798", why: "大规模合成 SWE 任务与环境镜像"}
+      - {type: paper, id: "2504.07164", title: "R2E-Gym: Procedural Environments and Hybrid Verifiers for Scaling Open-Weights SWE Agents", url: "https://arxiv.org/abs/2504.07164", why: "程序化环境 + 混合验证器"}
+      - {type: paper, id: "2505.20411", title: "SWE-rebench: An Automated Pipeline for Task Collection and Decontaminated Evaluation", url: "https://arxiv.org/abs/2505.20411", why: "自动采集、环境构建、去污染的流水线"}
+      - {type: paper, id: "2602.23866", title: "SWE-rebench V2: Language-Agnostic SWE Task Collection at Scale", url: "https://arxiv.org/abs/2602.23866", why: "多语言、规模化的环境构建"}
+      - {type: paper, id: "2609.22068", title: "CodeMidas: Scaling Agentic Coding RL Environments from Code Itself", url: "https://arxiv.org/abs/2609.22068", why: "2026-09 新作，从代码本身批量造 RL 环境"}
+      - {type: paper, id: "2606.16062", title: "Auditing Reward Hackability in Code RL Training Environments", url: "https://arxiv.org/abs/2606.16062", why: "训练环境的可作弊性审计，沙盒平台与环境平台共同关心"}
+      - {type: paper, id: "2608.22103", title: "Hack-Verifiable Terminal Bench: Evaluating Reward Hacking in Terminal Tasks", url: "https://arxiv.org/abs/2608.22103", why: "终端任务里的 reward hacking 评测"}
+
+  - key: D
+    title: "岗位③ · Agent RL 框架与训练系统"
+    description: |
+      弄清 RL 框架怎么驱动环境：agent loop 与 trainer 解耦（同步 / 异步 / partial rollout）、并发与长尾、
+      Trace 与轨迹格式、奖励计算放在哪、抢占与容错。
+      精读时整理：每个框架调用沙箱的方式（本地进程 / 远程 API / K8s Pod）、单次 rollout 的沙箱生命周期、
+      峰值并发与长尾对沙盒的要求（冷启动、超时、失败重试、状态保存）；框架层 Trace 需要沙盒提供哪些钩子。
+      对照 [[2609.22978]]（DSec）与 [[2609.19969]]（V4.1-Flash §6.2）的 rollout 基础设施。
+    items:
+      - {type: paper, id: "2409.19256", title: "HybridFlow: A Flexible and Efficient RLHF Framework（veRL）", url: "https://arxiv.org/abs/2409.19256", why: "最常用的开源 RL 框架底座（DSec 也引用，见 #28）"}
+      - {type: paper, id: "2505.24298", title: "AReaL: A Large-Scale Asynchronous Reinforcement Learning System for Language Reasoning", url: "https://arxiv.org/abs/2505.24298", why: "完全异步 RL，rollout 与训练解耦"}
+      - {type: paper, id: "2506.06122", title: "ROLL: Reinforcement Learning Optimization for Large-Scale Learning", url: "https://arxiv.org/abs/2506.06122", why: "阿里的大规模 RL 库，含 agentic 管线"}
+      - {type: post, id: skyrl-v0, title: "SkyRL-v0（Berkeley NovaSky 博客）", url: "https://novasky-ai.notion.site/skyrl-v0", why: "面向长程真实环境的 agentic RL，重点讲与远程沙箱的集成"}
+      - {type: paper, id: "2511.16108", title: "SkyRL-Agent: Efficient RL Training for Multi-turn LLM Agent", url: "https://arxiv.org/abs/2511.16108", why: "多轮 agent RL 的效率优化（异步调度、工具执行）"}
+      - {type: paper, id: "2508.03680", title: "Agent Lightning: Train ANY AI Agents with Reinforcement Learning", url: "https://arxiv.org/abs/2508.03680", why: "用 Trace 把任意 agent 与训练器解耦，对应「统一封装 + 日志 Trace」"}
+      - {type: paper, id: "2608.17528", title: "Agent Lightning v1.0: Towards Harnessed Agentic RL", url: "https://arxiv.org/abs/2608.17528", why: "2026-08 的后续版本"}
+      - {type: paper, id: "2505.10978", title: "Group-in-Group Policy Optimization for LLM Agent Training（verl-agent）", url: "https://arxiv.org/abs/2505.10978", why: "长程多轮 agent 的信用分配"}
+      - {type: paper, id: "2504.20073", title: "RAGEN: Understanding Self-Evolution in LLM Agents via Multi-Turn RL", url: "https://arxiv.org/abs/2504.20073", why: "多轮 RL 的训练不稳定性"}
+      - {type: post, id: rllm-deepswe, title: "rLLM / DeepSWE（Agentica）", url: "https://github.com/rllm-org/rllm", why: "开源 agent RL 框架与 SWE agent 训练实践"}
+      - {type: paper, id: "2511.14617", title: "Seer: Online Context Learning for Fast Synchronous LLM RL", url: "https://arxiv.org/abs/2511.14617", why: "rollout 长尾优化（DSec 也引用，见 #28）"}
+      - {type: paper, id: "2407.16741", title: "OpenHands: An Open Platform for AI Software Developers as Generalist Agents", url: "https://arxiv.org/abs/2407.16741", why: "典型 agent scaffold 及其 sandbox runtime 接口"}
+
+  - key: E
+    title: "Xiaomi MiMo"
+    description: |
+      小米 MiMo 系列的 post-training 与 RL 基础设施，重点看执行环境、异步 rollout、多模态 / GUI 环境。
+      精读时整理：MiMo 的环境与沙箱规模、隔离方式、调度策略，以及开源框架（uni-agent、MiMo-Code）对沙箱的接口。
+      MiMo-V2-Flash 的执行环境一节被 [[2609.22978]]（DSec）引用，这里读全文的 post-training 与环境部分。
+    items:
+      - {type: paper, id: "2505.07608", title: "MiMo: Unlocking the Reasoning Potential of Language Model — From Pretraining to Posttraining", url: "https://arxiv.org/abs/2505.07608", why: "MiMo-7B，含 RL 基础设施（异步 rollout 等）"}
+      - {type: paper, id: "2601.02780", title: "MiMo-V2-Flash Technical Report", url: "https://arxiv.org/abs/2601.02780", why: "DSec 引用了其执行环境部分；全文读 post-training 与环境"}
+      - {type: paper, id: "2506.03569", title: "MiMo-VL Technical Report", url: "https://arxiv.org/abs/2506.03569", why: "多模态 RL（与 GUI / computer-use 环境相关）"}
+      - {type: post, id: xiaomimimo-uni-agent, title: "uni-agent（XiaomiMiMo）", url: "https://github.com/XiaomiMiMo/uni-agent", why: "长程 agent 训练框架，2026-09 仍在活跃开发"}
+      - {type: post, id: xiaomimimo-mimo-code, title: "MiMo-Code（XiaomiMiMo）", url: "https://github.com/XiaomiMiMo/MiMo-Code", why: "「模型与 agent 共同进化」的代码 agent"}
+
+  - key: F
+    title: "对标：同类团队公开的环境 / 沙箱做法"
+    description: |
+      直接对标沙盒平台：Kimi 的 agentic 数据合成与 RL 基础设施、AgentENV（Firecracker + overlaybd + 快照 / fork）。
+      精读时逐项对照 [[2609.22978]]（DSec）与我们平台：隔离、冷启动、快照 / fork、镜像分发、并发密度、网络策略、
+      可观测，列出差距与可借鉴点。
+    items:
+      - {type: paper, id: "2507.20534", title: "Kimi K2: Open Agentic Intelligence", url: "https://arxiv.org/abs/2507.20534", why: "大规模 agentic 数据合成管线与 RL 基础设施章节"}
+      - {type: post, id: agentenv-docs, title: "AgentENV（kvcache-ai，Kimi K3 训练环境平台）文档", url: "https://kvcache-ai.github.io/AgentENV/latest/", why: "沙盒平台的直接对标：Firecracker + overlaybd + 快照 / fork"}
