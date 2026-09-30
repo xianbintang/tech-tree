@@ -3,7 +3,7 @@ title: "Agentic Benchmark 任务级有效性审计"
 aliases: [benchmark item validity audit, all-fail task adjudication, certified-unsolved, genuine hardness vs fake hardness]
 created: 2026-09-29
 updated: 2026-09-29
-sources: [2609.26826]
+sources: [2609.26826, 2609.33295]
 ---
 
 # Agentic Benchmark 任务级有效性审计
@@ -38,7 +38,7 @@ sources: [2609.26826]
 
 ## 争议与矛盾
 
-（暂无跨来源分歧，仅一篇来源）
+（暂无跨来源分歧；[[trace-mined-behavior-benchmark|TraceDance]] 从另一个场景——基准构建阶段的自动分级——补充了同一类问题的证据：自动裁判与人类 pass/fail 一致率 81.0%，同人类标注者互相之间的一致率相当，但自动裁判系统性比人类更宽松（三评委均分 2.46 vs 人类 1.68），进一步说明"verifier/裁判可信度需要显式审计"不是 Terminal-Bench 3 场景的特例 [[2609.33295]]）
 
 ## 开放问题
 
@@ -48,9 +48,9 @@ sources: [2609.26826]
 
 ## 相关概念
 
-[[terminal-bench]]、[[verifiable-reward-environment-generation]]
+[[terminal-bench]]、[[verifiable-reward-environment-generation]]、[[trace-mined-behavior-benchmark]]
 
 ## 相关来源
 
 - [[2609.26826]] — 提出这套五分类有序验证 screen，并在 Terminal-Bench 3 / Frontier-Bench 0.1 的 125 个 all-fail 任务上做实证审计
-</content>
+- [[2609.33295]] — TraceDance 在基准构建场景下报告自动分级器与人类的一致率、以及系统性偏宽松的幅度，作为"评测信号可信度"问题的另一实证

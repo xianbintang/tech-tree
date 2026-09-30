@@ -2,8 +2,8 @@
 title: "可验证奖励的 agentic 环境生成"
 aliases: [verifiable reward environment generation, agentic environment synthesis, RL 环境自动构造, large-scale agent task synthesis]
 created: 2026-09-25
-updated: 2026-09-29
-sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969, 2609.22000]
+updated: 2026-09-30
+sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969, 2609.22000, 2609.33295]
 ---
 
 # 可验证奖励的 agentic 环境生成
@@ -26,6 +26,7 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 - **"工具即数据库读写"环境先行方案（AgentScaler，[[2509.13311]]）**：把 function-calling 环境的构造问题转化为"工具依赖图建模（参数向量相似度 + LLM 校验边）→ Louvain 社区发现划分领域 → 每个领域生成数据库 schema + 可执行工具代码"的自动化流水线，从 3 万+ API 里划出 1,000+ 领域；验证靠数据库状态比对（write 型工具）+ 工具序列精确匹配（read 型工具）两个粒度，无需 LLM-as-judge 介入。是"环境先行"范式里少见的、给出完整自动化工具链（而非仅方法论）的具体实现 [[2509.13311]]。
 - **三元组形式化 + agent 协作质检（DeepSeek-V4.1-Flash 的方案）**：把每个任务形式化为 (problem, environment, verification system) 三元组，用"难度"和"正确性"两个维度做奖励信号迭代训练模型自己构造任务，并在任务被 RL 消费后用产生的轨迹反过来做质量复审。Coding agent 场景下是多个专职 agent 接力的流水线：判断项目能否容器化构建与验证 → 选定起点/设计实现方向/产出 fail-to-pass 与 pass-to-pass 评测点 → 独立 agent 搭建依赖与工作目录、打包成新镜像层并抹除解答痕迹 → 多个 agent 尝试解题 → 独立质检 agent 复查环境与轨迹（环境问题、事实错误、评测点不匹配、可被 hack 风险）→ 不通过则由修复 agent 修正、重新进入验证 [[2609.19969]]。这条路线和 VHD-Play 的"机制先行"不同：不依赖任务能被形式化为数学模型，而是靠"真实交互数据先行 + 多 agent 协作质检收尾"来保证质量，覆盖面更广但质检成本更依赖 agent 能力本身。
 - **参考先行（reference-grounded，[[recreation-bench]] 的方案）**：不构造数学模型，而是拿一个真实存在、可运行的参考应用/网站作为"标准答案"——agent 复现它，验证时用编排器探索参考应用生成"程序化断言 + VLM 视觉判定"双通道测试。这类方法适用于无法形式化为数学模型的开放式界面/软件任务，验证依据是"参考系统的可观察行为"而不是求解得到的最优解 [[2609.22000]]。
+- **轨迹先行（trace-mined，[[trace-mined-behavior-benchmark|TraceDance]] 的方案）**：与上述几条路线目标不同——不产出可训练的 RL 环境，而是从真实部署轨迹里挖掘用户指定的"不良行为"决策点，用 [[trace-mined-behavior-benchmark|决策点延续]] + Anchor-and-Confirm 检索直接组装成不需要环境重放的行为回归测试。和 [[2609.19969]] 的"真实交互先行"共享数据来源（都从真实 agent 会话出发），但下游产物不同：[[2609.19969]] 产出可被 RL 消费的训练任务三元组，TraceDance 产出针对特定行为的评测基准 [[2609.33295]]。
 
 ## 工程要点与数字
 
@@ -51,7 +52,7 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 
 ## 相关概念
 
-[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）
+[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）、[[trace-mined-behavior-benchmark]]（同样从真实 agent 数据出发，但产出评测基准而非训练环境）
 
 ## 相关来源
 
@@ -62,3 +63,4 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 - [[2509.13311]] — 给出"工具即数据库读写"的完整自动化环境构建流水线（工具依赖图 + Louvain 社区发现 + 数据库 schema 物化），是环境先行范式的具体工程实现
 - [[2609.19969]] — 给出"真实交互先行 + 多 agent 协作质检"的生产级环境合成流水线（§5.1.1），覆盖通用 agent 与 coding agent 两条产线
 - [[2609.22000]] — 提出"参考先行"验证范式，用真实参考应用 + 程序化/VLM 双通道断言构造 RecreationBench
+- [[2609.33295]] — 提出"轨迹先行"的行为基准挖掘范式（TraceDance），从部署轨迹直接构造不需要环境重放的行为评测基准

@@ -2,7 +2,7 @@
 title: "过程式评测（Process-based Evaluation）"
 aliases: [process-based evaluation, process reward, 过程监督, 过程式评测]
 created: 2026-09-29
-updated: 2026-09-29
+updated: 2026-09-30
 sources: [2609.24890]
 ---
 
@@ -38,7 +38,7 @@ sources: [2609.24890]
 
 ## 相关概念
 
-[[osworld-pro]]、[[computer-use-agent]]
+[[osworld-pro]]、[[computer-use-agent]]、[[trace-mined-behavior-benchmark]]（都是"不只看最终结果"的评测范式，但切法不同：前者逐子目标打分完整轨迹，后者只在单个决策点切一刀评测下一步响应，不需要重放完整轨迹）
 
 ## 相关来源
 
