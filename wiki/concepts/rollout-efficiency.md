@@ -2,8 +2,8 @@
 title: "Rollout Efficiency（Rollout 效率）"
 aliases: [rollout efficiency, rollout-efficiency taxonomy, rollout 成本优化]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-09-30
+sources: [2609.25463, 2609.33848]
 ---
 
 # Rollout Efficiency（Rollout 效率）
@@ -38,7 +38,7 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 ## 工程要点与数字
 
 - 生产推理轨迹上的同步测量：rollout 占单步墙钟时间基础工作负载 49%，长 CoT 变体 58%（作者自测，Figure 1）；文献里其他测量给出 70%、85%、长输出场景 >90% [[2609.25463]]。
-- 系统杠杆代表数字：AReaL（1.5B–32B）吞吐 2.77×；LlamaRL（405B）单步 10.7×；RollPacker 端到端 2.03–2.56×；DeepScaleR 用递增 context（8K→16K→24K）把训练算力从估算 70000 A100-小时压到约 3800；ESPO 提前停止减少 rollout token >20% 且提升准确率 [[2609.25463]]。
+- 系统杠杆代表数字：AReaL（1.5B–32B）吞吐 2.77×；LlamaRL（405B）单步 10.7×；RollPacker 端到端 2.03–2.56×；DeepScaleR 用递增 context（8K→16K→24K）把训练算力从估算 70000 A100-小时压到约 3800；ESPO 提前停止减少 rollout token >20% 且提升准确率 [[2609.25463]]。QwenGyre（[[elastic-rollout-training-scheduling]]，agentic 长程场景而非纯 reasoning）在 xLong-horizon SWE agent 训练上相对 Async/Colocate 提速 1.2×–1.85×，是 Resource-Aware Execution + Scheduling 组合杠杆在"黑盒 harness、近百万 token/rollout"场景下的具体实例 [[2609.33848]]。
 - 算法杠杆代表数字：GRESO rollout 提速 2.4×、最多减少 3.35× rollout，质量持平；POPO 用 replay 达到过采样基线效果只需约 30% rollout 预算；KGPS 显式建模非平稳性，比动态采样减少 83% rollout [[2609.25463]]。
 - **80 个方法里 50 个只报系统收益、17 个只报算法收益、12 个两者都报**——报告口径高度不对称，跨论文的加速比经常不可比（baseline 选择、阶段边界、吞吐单位、聚合统计量、硬件规格五个来源叠加）[[2609.25463]]。
 - 论文建议的统一比较口径：把两个杠杆都换算成"加速器小时 → 目标质量 $C(q)$ 曲线"，并配五个诊断协议（同等丢弃比例随机对照、增量 ladder、投机接受率随策略漂移曲线、staleness 扫描、匹配 cost 而非匹配 step 数）[[2609.25463]]。
@@ -55,8 +55,9 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 
 ## 相关概念
 
-[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]
+[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]、[[elastic-rollout-training-scheduling]]
 
 ## 相关来源
 
 - [[2609.25463]] — 80 方法双重分类综述（机制×瓶颈），提出统一评估口径与可组合性分析，是本页大部分结论的唯一来源
+- [[2609.33848]] — agentic long-horizon 场景（而非纯 reasoning）下的系统杠杆具体实例，补充黑盒 harness、xLong 执行规模下的速度数字
