@@ -2,8 +2,8 @@
 title: "Terminal-Bench"
 aliases: [Terminal-Bench 3, Frontier-Bench 0.1]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.26826]
+updated: 2026-09-30
+sources: [2609.26826, 2608.22103]
 ---
 
 # Terminal-Bench
@@ -21,6 +21,7 @@ sources: [2609.26826]
 - 生产记录快照 `3c5be84efd707da8`：1081 个 PR、639 个已评分任务、28801 次 trial、$105,933 记录的 agent 花费；PR 语料冻结截至 PR 1416，之后基准的线上变化不影响该快照的结论 [[2609.26826]]。
 - trial 拆分为四类：21219 次普通 agent trial、4668 次 cheat-variant trial（诱导 agent 用任意手段通过，探测 verifier 可被诱导接受什么）、1605 次 oracle run（跑作者参考解，测试 verifier 是否接受既定路线）、1309 次 nop run（提交空解，测试 verifier 能否拒绝平凡非解）[[2609.26826]]。
 - 每个任务都关联：提交包、PR 历史、verifier、参考解、trial 遥测、轨迹、控制实验、评审记录——论文把它当作任务生产语料而不只是一个排行榜来用 [[2609.26826]]。
+- [[hack-verifiable-environment]] 把 Terminal-Bench 全量任务自动转换成 8989 个"黑客可验证"版本（HVTB）：在 agent 工作目录埋入暴露真实解/测试的 `admin/` 蜜罐目录，用 inotify 监视器确定性检测是否被访问，测出的是"agent 在真实完成任务时会不会主动利用暴露出来的捷径"，与本页关注的"任务生产/评审质量"是互补的两个视角 [[2608.22103]]。
 
 ## 工程要点与数字
 
@@ -37,9 +38,10 @@ sources: [2609.26826]
 
 ## 相关概念
 
-[[benchmark-item-validity-audit]]
+[[benchmark-item-validity-audit]]、[[hack-verifiable-environment]]
 
 ## 相关来源
 
 - [[2609.26826]] — 对 Terminal-Bench 3 / Frontier-Bench 0.1 生产记录做全面审计，是目前唯一公开描述其内部生产/评审语料结构的来源
+- [[2608.22103]] — 把 HVE 方法论套到 Terminal-Bench 上构造 HVTB（8989 个黑客可验证环境），测量 5 个前沿模型在不同提示披露程度下的 reward hacking 率
 </content>

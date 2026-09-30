@@ -2,8 +2,8 @@
 title: "Agentic Benchmark 任务级有效性审计"
 aliases: [benchmark item validity audit, all-fail task adjudication, certified-unsolved, genuine hardness vs fake hardness]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.26826]
+updated: 2026-09-30
+sources: [2609.26826, 2602.23866, 2609.22068, 2606.16062, 2608.22103]
 ---
 
 # Agentic Benchmark 任务级有效性审计
@@ -38,7 +38,7 @@ sources: [2609.26826]
 
 ## 争议与矛盾
 
-（暂无跨来源分歧，仅一篇来源）
+（暂无跨来源分歧；[[2602.23866]]、[[2609.22068]] 视角互补而非冲突——都面对"训练环境构造"而非"评测基准审计"这个相邻场景。[[2602.23866]] 诊断出的三类混淆因素（测试耦合、隐式命名要求、外部依赖）与本页的五分类判定规则关注同一类问题（区分"模型能力不足"与"任务/环境本身有问题"），但粒度更粗，没有做本页这种有序、互斥的判定流程，也没有 oracle run / nop run / cheat-variant trial 这类主动探测手段。[[2609.22068]]（CodeMidas）的"解答一致性核验"步骤——用复审 agent 核对 verifier 判定，标记假阳性/假阴性——在精神上最接近本页 verifier 完备性审计的关注点，但只是生成阶段的一次性复审，既没有本页的主动探测手段，也没有报告复审本身的准确率/漏检率。[[2606.16062]] 方向相反但精神一致：本页关心"过不了的正确解"（all-fail 任务是否真难），[[2606.16062]] 关心"能通过的错误解"（测试套件是否弱到放过 hack），但都不满足于单一 pass/fail 分数，都要求主动构造反例测试 verifier 本身——[[2606.16062]] 的 gold-sanity gate（把生成的测试跑在 gold 解上）可以看作本页 oracle run 思路在"训练环境测试加固"场景下的具体实现）
 
 ## 开放问题
 
@@ -48,9 +48,13 @@ sources: [2609.26826]
 
 ## 相关概念
 
-[[terminal-bench]]、[[verifiable-reward-environment-generation]]
+[[terminal-bench]]、[[verifiable-reward-environment-generation]]、[[swe-rebench-v2]]、[[reward-hackability-audit]]（方向相反、精神一致：那边测"能通过的错误解",本页测"过不了的正确解"）、[[hack-verifiable-environment]]（同样是"主动构造反例测试 verifier/agent 行为"的方法论精神，但探测对象不同：本页的 oracle/nop/cheat-variant trial 探测的是 verifier 能否被诱导接受错误解，HVE 探测的是 agent 在真实完成任务时会不会主动利用预先埋入的暴露点，且都以 Terminal-Bench 系为实证对象）
 
 ## 相关来源
 
 - [[2609.26826]] — 提出这套五分类有序验证 screen，并在 Terminal-Bench 3 / Frontier-Bench 0.1 的 125 个 all-fail 任务上做实证审计
+- [[2602.23866]] — 相邻场景（训练环境构造而非评测审计）：诊断出测试耦合、隐式命名要求、外部依赖三类混淆因素,可与本页的判定规则互相参照
+- [[2609.22068]] — 相邻场景（训练环境构造）：提出用复审 agent 核对 verifier 判定假阳性/假阴性的一次性质检步骤，可与本页系统性的有序判定规则对比
+- [[2606.16062]] — 方向相反的相邻场景：直接生成错误补丁实测 code RL 环境能否被骗过（28.5%/25.0% Docker 验证 hackability），并用 gold-sanity gate 给出可与本页 oracle run 思路对照的修复闭环
+- [[2608.22103]] — 同样以 Terminal-Bench 为实证对象，但用埋点式蜜罐 + inotify 监视器测 agent 轨迹的黑客率，是本页 verifier 完备性审计之外的另一个互补探测维度
 </content>
