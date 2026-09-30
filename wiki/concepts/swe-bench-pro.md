@@ -2,8 +2,8 @@
 title: "SWE-bench Pro"
 aliases: [SWE-bench Pro, Pro-618]
 created: 2026-09-25
-updated: 2026-09-29
-sources: [2609.23377, 2609.26777]
+updated: 2026-09-30
+sources: [2609.23377, 2609.26777, 2609.32577]
 ---
 
 # SWE-bench Pro
@@ -25,6 +25,11 @@ sources: [2609.23377, 2609.26777]
 ## 工程要点与数字
 
 - [[2609.23377]] 中 Qwen3.6-27B 基础模型在 Pro-618 上基线平均解决率 52.64%，经类别专家训练 + MOPD 蒸馏后提升到 58.04%（+5.39pp） [[2609.23377]]。
+- [[2609.32577]] 用完整 SWE-bench Pro（非 Pro-618 子集）评测 MiMo-V2.6-Flash/Pro：Flash 纯代码 RL 上二值奖励基线在约 59% 停滞，[[groupwise-agentic-grading]] 方法持续涨到 62.5%（avg@3，step52）；工业级混合任务 RL 最终 Flash 60.9%、Pro 62.7%，Pro 超过 GPT-5.6 Sol（60.5%）但落后 Claude Opus 5 约 17.2pp（79.9%） [[2609.32577]]。
+
+## 与 [[groupwise-agentic-grading]] 的方法关系
+
+[[2609.32577]] 未说明是否使用了 [[2609.23377]] 的 Pro-618 审计子集还是完整 731 任务集，两篇论文都以 SWE-bench Pro 为评测基准但走的是不同技术路线（类别专家训练+蒸馏 vs 组内质量打分+advantage 重分配），彼此没有直接对比。
 
 ## 争议与矛盾
 
@@ -36,9 +41,10 @@ sources: [2609.23377, 2609.26777]
 
 ## 相关概念
 
-[[category-aware-expert-training]]、[[swe-bench-multilingual]]、[[repolaunch]]、[[swe-serve]]
+[[category-aware-expert-training]]、[[swe-bench-multilingual]]、[[repolaunch]]、[[swe-serve]]、[[groupwise-agentic-grading]]
 
 ## 相关来源
 
 - [[2609.23377]] — 使用 Pro-618 子集验证类别感知专家训练 + MOPD 蒸馏的效果
 - [[2609.26777]] — 作为对比基线之一；指出 [[swe-serve]] 的 oracle 补丁规模（中位数 553 行/7 个文件）比 SWE-bench Pro 更大，但平均 prompt 更短
+- [[2609.32577]] — 用作代码 agent RL 的两个主评测基准之一（另一个是 DeepSWE v1.1），验证 groupwise agentic grading + sum-preserving advantage 重分配的效果
