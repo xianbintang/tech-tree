@@ -2,8 +2,8 @@
 title: "MicroVM Snapshot Uniqueness / 快照克隆唯一性恢复"
 aliases: [snapshot clone uniqueness, VM 克隆唯一性, 快照恢复唯一性, MADV_WIPEONSUSPEND, SysGenId, VmGenId]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecracker]
+updated: 2026-10-02
+sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecracker, 2605.22781]
 ---
 
 # MicroVM Snapshot Uniqueness / 快照克隆唯一性恢复
@@ -42,12 +42,14 @@ sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecrack
 - 只在单一 x86 机型（EC2 m5.12xlarge）上测量，跨 CPU 世代/ARM 平台的开销未知 [[2102.12892]]。
 - "VM 身份何时改变"缺乏对 serverless 场景明确适用的规则——Microsoft 现有的 VmGenId 变更规则（克隆/恢复/备份恢复触发,reboot/pause/resume/live migration 不触发）不一定适合 serverless,但本文没有给出 Lambda 实际采用的具体规则 [[2102.12892]]。
 - DSec（[[2609.22978]]）§6.3 描述的 microVM pause/resume 是"单实例挂起-恢复同一身份"，不涉及克隆出多个并发实例，因此本文的核心问题在 DSec 目前公开描述的机制下不直接适用；但 DSec 一周内维护 4,889 个 microVM 快照（Table 2），这些快照是否也被当作"启动多个独立沙箱的模板"使用、从而触发本文的问题，DSec 原文未说明，无法确认 [[2102.12892]]。
+- **[[sandbox-checkpoint-rollback|DeltaBox]] 的 RL fan-out 场景是本页问题的一个新实例，但论文完全未处理**：DeltaBox 的 RL 训练 fan-out（Fig.7b-c）从同一个冻结的模板进程连续 `fork()` 出 $N{\in}\{16,64\}$ 个子进程做并发 rollout——子进程初始内存状态（包括任何 PRNG 内部状态）与模板完全一致，这正是本页描述的"克隆导致意外 Sybil"场景。DeltaBox 论文全文没有提及对 fork 出的子进程做任何重新播种或身份重置，也没有引用本页讨论的 `MADV_WIPEONFORK`/`SysGenId` 这类机制，是一个论文未覆盖、需要我们自己在落地时补上的风险点 [[2605.22781]]。
 
 ## 相关概念
 
-[[microvm-placement]]、[[snapshot-layering]]
+[[microvm-placement]]、[[snapshot-layering]]、[[sandbox-checkpoint-rollback]]
 
 ## 相关来源
 
 - [[2102.12892]] — AWS Lambda 团队提出 MADV_WIPEONSUSPEND 与 SysGenId 两个 Linux 内核接口，解决 microVM 快照克隆后的实例唯一性问题
 - [[brooker-lambda-snapstart]] — Firecracker/Lambda 作者 Marc Brooker 的科普博文，直接引用本概念的论文原文，并补充了连接/协议状态这一类唯一性问题未覆盖的"克隆之痛"
+- [[2605.22781]] — DeltaBox：RL fan-out 场景下从同一冻结模板 fork 出多个并发子进程，是本页问题的新实例，但论文未处理

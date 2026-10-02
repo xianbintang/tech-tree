@@ -2,8 +2,8 @@
 title: "Agent Rollout 与 GPU 训练抢占解耦"
 aliases: [rollout preemption, 抢占安全 rollout, agent sandbox 与 worker container 解耦, preemption-safe resumption, rollout-training decoupling, agent loop 解耦, sandbox pause/resume, 抢占安全的 rollout 恢复]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978]
+updated: 2026-10-02
+sources: [2609.19969, 2609.22978, 2605.22781]
 ---
 
 # Agent Rollout 与 GPU 训练抢占解耦
@@ -35,6 +35,8 @@ sources: [2609.19969, 2609.22978]
 
 （暂无跨来源分歧；[[2609.19969]] 与 [[2609.22978]] 对同一架构改动的描述互相印证——前者从"使用方"训练效果视角，后者从沙箱平台设计视角——而非冲突）
 
+- **[[2605.22781]]（DeltaBox）明确指出本页"pause/resume 重连"与它自己的"任意回滚"是两类不同问题**：DSec 的 pause/resume 只能恢复到"被抢占那一刻"的单一状态（单实例挂起-恢复同一身份），DeltaBox 论文 Table 1/§2.3 把 DSec 归类为"只能 WAL 回放已缓存输出，不支持任意回滚（no arbitrary rollback）"——即本页描述的抢占安全重连机制不能替代 test-time 树搜索/BoN 需要的"回溯到任意历史 checkpoint"能力，两者是互补关系，不是同一问题的两种实现 [[2605.22781]] [[2609.22978]]。
+
 ## 开放问题
 
 - token 级状态持久化对显存/主存的额外占用有多大（需要保留所有 in-flight 样本的 KV cache 和路由状态），论文未给出具体数字。
@@ -44,9 +46,10 @@ sources: [2609.19969, 2609.22978]
 
 ## 相关概念
 
-[[sandbox-density-overcommit]]、[[microvm-sandbox]]
+[[sandbox-density-overcommit]]、[[microvm-sandbox]]、[[sandbox-checkpoint-rollback]]
 
 ## 相关来源
 
 - [[2609.19969]] — 从"使用方"角度描述该架构改动的动机与训练侧效果（跨 scaffold RL、异步 post-training 基础设施），补充 token 级状态持久化机制
 - [[2609.22978]] — DSec §6.2–6.3：rollout 与 GPU 训练解耦、pause/resume 协同抢占的生产经验（无量化评估）
+- [[2605.22781]] — DeltaBox：明确区分"抢占后重连"（DSec pause/resume）与"任意历史点回滚"（DeltaBox 本身）是两类不同问题，并给出 RL fan-out 场景下三种沙箱方案的 GPU 占用率量化对比
