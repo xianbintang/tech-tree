@@ -2,8 +2,8 @@
 title: "Snapshot Layering / 分层增量快照"
 aliases: [layered snapshots, incremental snapshot tree, 快照树, provenance-based deduplication, 分层快照]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes]
+updated: 2026-10-02
+sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes, 2026-ai-engineer-fork-to-fleet]
 ---
 
 # Snapshot Layering / 分层增量快照
@@ -23,6 +23,8 @@ sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lamb
 - **Provenance-based 去重 vs 事后扫描去重（对比 KSM）**：子快照本就是从父快照恢复而来，哪些页相同是天然已知的，不需要像 Kernel Samepage Merging 那样运行时后台扫描比对内容，因此没有 KSM 式的 CPU vs 内存权衡 [[brooker-lambda-snapstart]]。
 - **分层密钥管理**：不同层级可用不同加密密钥——公共组件（如内核、运行时）用服务侧密钥，客户数据用客户自己控制的密钥，只有一句话带过，未展开密钥派生/轮换/撤销机制 [[brooker-lambda-snapstart]]。
 - **与克隆/唯一性问题的关系**：分层快照解决的是"数据怎么分层存、怎么少传输"，不解决 [[microvm-snapshot-uniqueness]] 讨论的"克隆出的实例状态相同"问题——两者是快照复用场景下正交的两类工程挑战，通常需要同时处理。
+- **与磁盘快照的关系**：本页机制针对的是内存/执行状态；磁盘内容的增量快照是正交的另一类状态，用的是写时复制文件系统 + 块级 diff（而非内存页级 diff），详见 [[sandbox-disk-persistence]]。
+- **冷启动三种策略的权衡**：除了"预热池"（warm pool，常驻消耗 CPU/内存换低延迟）之外，内存快照即时恢复是另一种冷启动路径——据称可以做到毫秒级启动（未说明硬件、镜像大小、是否预热缓存等测量条件，应视为定性说法）；也可以用"预热池 + 快照恢复动态补充容量"的混合策略取两者平衡 [[2026-ai-engineer-fork-to-fleet]]。
 
 ## 工程要点与数字
 
@@ -39,14 +41,16 @@ sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lamb
 - 具体的密钥派生/轮换/撤销机制未披露，对比 [[2023-brooker-lambda-container-loading]] 收敛加密方案的详尽程度，这部分明显只是简化科普 [[brooker-lambda-snapstart]]。
 - 分层快照针对的是**快照内存**的去重与分发，与 [[on-demand-image-loading]] 里 [[2023-brooker-lambda-container-loading]] 针对**容器镜像**的按需加载+ 收敛加密去重是否共享底层基础设施，两篇文本均未说明，仅问题描述与时间线高度吻合（详见 [[on-demand-image-loading]] 「开放问题」）。
 - DSec（[[2609.22978]]）§6.3 的 microVM pause/resume 是单实例挂起-恢复同一身份，不是本页讨论的"多层快照树 + 克隆多实例"场景，DSec 是否在内部使用了类似的分层快照机制，原文未说明，无法确认。
+- "内存快照恢复可达毫秒级"这一说法只有一个独立来源的定性描述，没有任何基准测试细节（硬件、镜像大小、是否命中本地缓存），不能与本页 Firecracker 4ms/10ms 的实测数字直接比较或替代引用 [[2026-ai-engineer-fork-to-fleet]]。
 - AWS Lambda MicroVMs 的"从快照启动"（[[aws-lambda-microvms-agent-sandboxes]]）是本页机制的又一个生产实例，但公开描述里只有单层快照（镜像构建完成后打一次快照，之后所有 session 都从这一份启动），未提及多阶段分层快照树；与 DSec §6.1 的 `pack_diff`（把交互式 session 的增量磁盘快照直接变成可复用环境构建产物，本身会形成一条不断增长的快照演化链）相比，用法更接近"一次性冷启动优化"而非"把快照当持续演化的构建工具"，两者是快照复用的两种不同使用模式。
 
 ## 相关概念
 
-[[microvm-snapshot-uniqueness]]、[[on-demand-image-loading]]
+[[microvm-snapshot-uniqueness]]、[[on-demand-image-loading]]、[[sandbox-disk-persistence]]
 
 ## 相关来源
 
 - [[brooker-lambda-snapstart]] — Firecracker/Lambda 作者 Marc Brooker 提出分层快照树的设计思路：按 provenance 去重 + 分层密钥，声称最多减少 90% 数据搬运量
 - [[brooker-seven-years-of-firecracker]] — Aurora DSQL 案例：同一份快照的多个克隆实例共享未修改内存页，是与分层增量快照相邻但不同的省数据手段（见「开放问题」）
 - [[aws-lambda-microvms-agent-sandboxes]] — 又一个"从快照启动跳过初始化"的生产案例（AWS Lambda MicroVMs），但只用单层快照，未披露分层机制，也未讨论克隆唯一性问题
+- [[2026-ai-engineer-fork-to-fleet]] — OpenAI 工程师讲座：补充"内存快照毫秒级恢复"的定性说法、warm pool/快照恢复/混合三种冷启动策略的权衡

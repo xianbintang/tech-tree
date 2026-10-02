@@ -2,8 +2,8 @@
 title: "MicroVM Placement / 放置调度"
 aliases: [microVM placement, VM placement, uVM 放置, 沙箱放置调度, PAR 峰均比]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda]
+updated: 2026-10-02
+sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda, 2026-ai-engineer-fork-to-fleet]
 ---
 
 # MicroVM Placement / 放置调度
@@ -23,6 +23,7 @@ sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda]
 - **预测无关（forecasting-free）的立场**：在 Lambda 生产流量上验证，µVM CPU 用量的最佳 p90 预测在整个生命周期上是 0（LSTM/TCN 给 50 步历史预测 20 步都失败），因此不走"预测用量 + Best-Fit/genetic algorithm"的传统路线，而是设计不依赖预测的算法 [[2021-balaji-fireplace]]。
 - **降维手段**：用 [[power-of-two-choices]] 把动作空间从"全部 PM"降到随机采样的 K 个候选，避免了需要全机群实时状态的可扩展性问题。
 - **决策算法**：详见 [[hindsight-imitation-learning]]——用离线可得的未来真实数据构造贪心"教师"（Hindsight 算法），再训练监督学习模型模仿它，得到一个只用当前特征做决策的在线策略。
+- **快照分层感知调度（与 PAR bin-packing 正交的另一个放置信号）**：当请求是"从某个快照 ID 恢复"而非"创建全新沙箱"时，可以用快照 lineage（一条由多层组成的增量链）的缓存命中情况做放置依据——若某节点已经缓存了 lineage 里的大部分/全部层，调度器优先把恢复请求路由到该节点，减少需要下载的数据量。这与 FirePlace 的 PAR 式目标（优化新建 VM 时各机器峰值负载的均衡）是**不同维度**的放置信号：一个优化负载均衡，一个优化数据亲和性，原始资料未讨论两者冲突时如何折中，但描述为可以同时存在于同一调度器里的互补规则 [[2026-ai-engineer-fork-to-fleet]]。
 
 ## 工程要点与数字
 
@@ -40,6 +41,7 @@ sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda]
 - 未覆盖 µVM 创建/销毁时机的决策（何时提前销毁空闲实例省内存）和跨 PM 迁移——这是本问题设定之外的相邻子问题，作者列为未来工作 [[2021-balaji-fireplace]]。
 - 已核实 [[2609.22978]]（DSec）§7「Placement engine strategy」确认使用 power-of-k-choices（k 个节点选负载最低者）应对亚秒级数千沙箱突发与重度超卖，并辅以"本地视图叠加近期放置"和"每 edge 保留最终准入权"两个机制；但原文未给出 PAR 式目标函数或具体 k 值，与本文的目标函数/参数是否一致仍待正式精读 DSec 全文时核实。
 - DSec 全文未发现覆盖共享队列层面的 noisy-neighbor 公平性设计（对照 [[noisy-neighbor-queue-fairness]]），只覆盖了放置侧——如果我们的调度器也有共享提交队列，这可能是一个值得补的能力缺口。
+- 快照分层感知调度只有一个三节点、四层 lineage 的教学示意，没有给出生产场景下的层命中率、调度延迟数字，也没有讨论它与 PAR 式 bin-packing 目标冲突时具体如何加权或仲裁——比 FirePlace 论文的量化程度粗糙得多，需要后续更详细的资料补充 [[2026-ai-engineer-fork-to-fleet]]。
 
 ## 相关概念
 
@@ -49,3 +51,4 @@ sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda]
 
 - [[2021-balaji-fireplace]] — 在 AWS Lambda 生产 Firecracker µVM 流量上系统化建模放置问题，提出 PAR 目标与预测无关的求解思路
 - [[brooker-ten-years-of-lambda]] — 确认 DSec §7 同样使用 power-of-k-choices 做沙箱放置，并补充队列层面 noisy-neighbor（[[noisy-neighbor-queue-fairness]]）的对照案例
+- [[2026-ai-engineer-fork-to-fleet]] — OpenAI 工程师讲座：给出快照分层感知调度这一与 PAR bin-packing 正交的放置信号（教学示意，无生产量化数据）

@@ -2,8 +2,8 @@
 title: "gVisor"
 aliases: [Google gVisor, runsc, Sentry, 用户态内核沙箱]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2020-anjali-firecracker-gvisor]
+updated: 2026-10-02
+sources: [2020-anjali-firecracker-gvisor, 2026-ai-engineer-fork-to-fleet]
 ---
 
 # gVisor
@@ -35,13 +35,14 @@ gVisor 是我们研究方向关键词表（`config/interests.yaml`）里明确�
 
 ## 争议与矛盾
 
-暂无跨来源数字冲突（本页目前仅有一篇来源）。
+暂无跨来源数字冲突（本页量化数字仅来自一篇来源）；下面是一条定性的、独立于本页实验数据的从业者判断，与本页结论方向一致但证据类型不同（经验总结 vs. 微基准），见「开放问题」最后一条。
 
 ## 开放问题
 
 - 本页数字来自 gVisor release-20200127.0（2020 年 1 月版本），六年间 gVisor 网络性能等已有大幅迭代（论文自述相比更早的 release-20190304 版本网络吞吐提升近 800%），当前版本的真实数字需要独立验证，不能直接引用本页数字做选型依据。
 - gVisor 与 [[microvm-sandbox]]（Firecracker）在同等密度/并发目标下没有第三方在同一评测环境下做过直接对比（[[microvm-sandbox]] 页开放问题里也提到这一点），本页只能提供"两者各有短板、没有全面占优者"的定性结论。
 - 未找到 gVisor 在 agent/RL 训练沙箱场景（长生命周期、有状态、高并发文件 IO）下的公开评测数据，本页数字均来自 serverless 短生命周期场景的微基准，外推到我们的实际工作负载需要自己实测。
+- OpenAI 一场面向 agent 沙箱的从业者讲座把 gVisor 的安全模型重新表述为"两步攻击链"：先攻破用户态的 Sentry/Gofer，再从它们攻破宿主内核——比直接攻击宿主内核的容器/fork 方案更难，但宿主内核终究还在攻击链末端；该讲座同时给出一条独立的经验观察："几乎所有团队的隔离选型都会经历容器 → gVisor/V8 隔离 → 最终发现 agent 需要一台完整 Linux 机器"的演进路径，建议直接从 microVM 起步。这是定性的从业者经验、不是量化评测，但与本页"gVisor 宿主内核代码覆盖率反而是四者最高"的反直觉发现（见「核心机制」）方向一致：即便 gVisor 把大部分系统调用实现挪进了用户态，宿主内核仍然是攻击链的最终防线，没有被真正"去掉" [[2026-ai-engineer-fork-to-fleet]]。
 
 ## 相关概念
 
@@ -49,4 +50,5 @@ gVisor 是我们研究方向关键词表（`config/interests.yaml`）里明确�
 
 ## 相关来源
 
-- [[2020-anjali-firecracker-gvisor]] — 唯一来源：gVisor 与 Firecracker 的内核代码覆盖率 + 微基准对比研究（VEE'20），本页几乎所有事实与数字均出自此文
+- [[2020-anjali-firecracker-gvisor]] — gVisor 与 Firecracker 的内核代码覆盖率 + 微基准对比研究（VEE'20），本页几乎所有事实与数字均出自此文
+- [[2026-ai-engineer-fork-to-fleet]] — OpenAI 工程师讲座：给出 gVisor 安全模型的"两步攻击链"表述，以及"团队最终都会选 microVM"的独立从业者经验观察

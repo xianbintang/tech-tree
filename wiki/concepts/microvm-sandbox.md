@@ -2,8 +2,8 @@
 title: "MicroVM 沙箱"
 aliases: [microVM, Firecracker sandbox, VM-level agent isolation, 轻量虚拟机, micro virtual machine, microVM isolation, 轻量虚拟机隔离, Firecracker microVM]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2023-huang-pvm, 2020-anjali-firecracker-gvisor, 2017-manco-lightvm, 2005-bellard-qemu]
+updated: 2026-10-02
+sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2023-huang-pvm, 2020-anjali-firecracker-gvisor, 2017-manco-lightvm, 2005-bellard-qemu, 2026-ai-engineer-fork-to-fleet]
 ---
 
 # MicroVM 沙箱
@@ -31,7 +31,11 @@ sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-co
 - **[[gvisor]] 是容器与 microVM 之间的第三条路线（paravirtualization）**：不跑完整 guest 内核，而是用用户态 *Sentry* 进程拦截并重新实现容器发出的绝大多数系统调用；用独立第三方内核代码覆盖率测量看，gVisor 的宿主内核代码覆盖率（91,161 行）反而是原生 Linux/LXC/Firecracker 四者里最高的一个，说明"把功能挪到用户态"并不等价于"减少了对宿主内核的依赖"——这是评估任何隔离方案时不能只看架构图、必须实测的一个反直觉例子 [[2020-anjali-firecracker-gvisor]]。
 - **[[lightvm]] 是这条谱系更早、路线不同的前身**：2017 年就论证了"VM 隔离与容器级性能不是互斥取舍"这一核心命题,但走的是"Xen + unikernel/Tinyx 定制镜像 + 重写控制面（消除集中式 XenStore）"路线,而非"KVM + 精简 VMM、保留通用 guest 镜像"（[[firecracker]] 一脉）;两者共享同一论点但技术路径、时代硬件、评测场景都不可直接比较（LightVM 2.3ms/8000VM 是 unikernel 极限压测,Firecracker 150ms/10x 超卖是通用 Lambda 函数场景）,DSec 本身选择了后一条路线,可能是因为 agent 训练沙箱需要跑相对通用的 Linux 环境,unikernel 式"每应用定制镜像"的工程成本过高 [[2017-manco-lightvm]]。
 - **[[nested-virtualization|嵌套虚拟化]]是第三种取舍点，解决的是"host 没有 hypervisor 控制权"这个约束**：microVM（Firecracker）通常要求宿主开放 `/dev/kvm` 或 root 权限；当沙箱需要跑在租来的公有云 VM 里（而非自己控制的裸机）时，[[pvm]] 这类不依赖硬件虚拟化支持、对宿主 hypervisor 透明的软件嵌套虚拟化方案是候选出路，已在阿里云生产环境日均承载 10万+ 安全容器 [[2023-huang-pvm]]。但代价是嵌套虚拟化天然多一层地址转换，即便像 PVM 那样优化到"单次 world switch 成本降低一个数量级"，仍无法完全消除；DSec 自己的评测选择"排除嵌套虚拟化，microVM 直接跑裸机"，说明这条路线的适用前提是"没有 host 控制权"，而不是普适的隔离方案 [[2023-huang-pvm]]。
-- **agent 建环境即 microVM/容器通用**：DSec 支持 `pack_diff`——agent 可以在任意时刻对一个沙箱做增量磁盘快照，之后可作为新沙箱恢复，把交互式会话直接变成可复用环境，不需要独立的镜像构建流水线 [[2609.22978]]。
+- **agent 建环境即 microVM/容器通用**：DSec 支持 `pack_diff`——agent 可以在任意时刻对一个沙箱做增量磁盘快照，之后可作为新沙箱恢复，把交互式会话直接变成可复用环境，不需要独立的镜像构建流水线 [[2609.22978]]。磁盘级增量快照的具体实现路径（XFS reflink 写时复制 + FIEMAP 识别变更块）见 [[sandbox-disk-persistence]]（OpenAI 讲座独立给出，未与 DSec 的 `pack_diff` 做过交叉验证）[[2026-ai-engineer-fork-to-fleet]]。
+- **crosvm → Firecracker/Cloud Hypervisor 的谱系来源**：Firecracker 从 Google 为 Chromebook 跑 Linux VM 而开发的 crosvm fork 而来；Cloud Hypervisor 是多家公司共同维护的另一支同源 Rust VMM，范围更通用。两者共同的设计动机是"砍掉 QEMU 历史上反复被攻破的 C 实现设备代码、换成内存安全的 Rust 实现" [[2026-ai-engineer-fork-to-fleet]]。
+- **设备级 jail（最小权限的另一层）**：VMM 可以把每个模拟设备的宿主侧进程分别关进独立的权限沙箱——block 设备后端只拿到块资源访问权限，network 设备后端只拿到网络权限；即便某个设备被攻破，也不能直接获得其它设备的权限。这是 Jailer（见 [[firecracker]]）之外、VMM 架构内部更细粒度的一层最小权限设计，DSec 原文未提及 [[2026-ai-engineer-fork-to-fleet]]。
+- **GPU 访问的多租户限制**：`virtio-gpu` 只提供高层图形库式接口；需要直通（metal access）时要用 VFIO，但同一时刻只能独占给一个沙箱，不支持多租户共享——这是 microVM 路线在"需要 GPU 的 agent/ML 研究类沙箱"场景下的一个具体限制，[[2023-huang-pvm|VFIO mediated device]] 框架是潜在的部分解法，但未在原始资料中展开 [[2026-ai-engineer-fork-to-fleet]]。
+- **"沙箱悲伤的七个阶段"——一条独立的从业者经验判断**：OpenAI 工程师的讲座里提到，几乎所有团队的隔离选型都会经历"先试容器 → gVisor/V8 隔离 → 最终发现 agent 需要一台完整 Linux 机器、且这台机器必须安全"的演进路径，给创业团队的建议是从一开始就用 microVM。这是定性的从业者经验，不是量化结论，但与 DSec 选择 microVM/容器/FnCall/fullVM 四后端、而非单压 gVisor 的架构决策方向一致 [[2026-ai-engineer-fork-to-fleet]]。
 
 ## 工程要点与数字
 
@@ -59,7 +63,7 @@ sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-co
 
 ## 相关概念
 
-[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]、[[sandbox-image-distribution]]、[[sandbox-density-overcommit]]、[[agentic-rollout-preemption]]
+[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]、[[sandbox-image-distribution]]、[[sandbox-density-overcommit]]、[[agentic-rollout-preemption]]、[[sandbox-disk-persistence]]
 
 ## 相关来源
 
@@ -72,3 +76,4 @@ sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-co
 - [[kata-containers-architecture]] — Kata Containers 官方架构文档，"安全容器"（VM 套容器）路线的标准架构说明：shimv2、三层环境模型、guest assets、agent 通信、存储两条路径
 - [[2023-huang-pvm]] — 提出第三种隔离取舍点：不依赖硬件支持、对宿主透明的软件嵌套虚拟化，解决"host 无 hypervisor 控制权"场景下的强隔离需求
 - [[2020-anjali-firecracker-gvisor]] — 独立第三方内核代码覆盖率与微基准对比研究，量化 [[gvisor]] 与 Firecracker 两条 microVM/paravirtualization 路线的实际差异
+- [[2026-ai-engineer-fork-to-fleet]] — OpenAI 工程师讲座：补充 crosvm/Cloud Hypervisor 谱系、设备级 jail、GPU 多租户限制等 DSec 未覆盖的具体机制，以及独立的从业者选型经验（"沙箱悲伤的七个阶段"）
