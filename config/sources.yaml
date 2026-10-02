@@ -111,6 +111,7 @@ posts:
     - {name: Eugene Yan, type: rss, url: "https://eugeneyan.com/rss/", weight: 2}
     - {name: Hamel Husain, type: rss, url: "https://hamel.dev/index.xml", weight: 2}
     - {name: Jay Alammar (Language Models & Co.), type: rss, url: "https://newsletter.languagemodels.co/feed", weight: 2}
+    - {name: AI News (smol.ai), type: rss, url: "https://news.smol.ai/rss.xml", weight: 0}   # 每日 AI 新闻汇总（Karpathy 推荐），原 buttondown.com/ainews
     - {name: Jack Clark (Import AI), type: rss, url: "https://importai.substack.com/feed", weight: 1}
     - {name: Philipp Schmid, type: rss, url: "https://www.philschmid.de/rss", weight: 1}
     - {name: Answer.AI (Jeremy Howard), type: rss, url: "https://www.answer.ai/index.xml", weight: 1}
