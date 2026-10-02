@@ -1,0 +1,23 @@
+# Karpathy《Deep Dive into LLMs like ChatGPT》（https://www.youtube.com/watch?v=7xTGNNLPyMI）简介中引用的论文与资料。
+# 对应学习路线第 1 步「一个模型是怎么生产出来的」（library/learning-path.md）。
+# 新增条目后运行：uv run python -m pipeline.reading_list create config/reading-lists/karpathy-deep-dive.yaml
+
+name: karpathy-deep-dive
+labels: [reading-list, learning-path]
+
+categories:
+  - key: A
+    title: "视频引用的论文：从预训练到 RL"
+    description: |
+      Karpathy 视频按「预训练 → SFT → RL → RLHF」讲了一遍模型生产流程，简介里给了每一段的代表论文。
+      读者是沙箱平台工程师、刚入门后训练，目标是「全面但不深入」。精读时：
+      (1) 用通俗语言讲清这篇在模型生产流程里的位置（视频哪一章引用它）；
+      (2) 只深挖与执行环境 / 沙箱相关的部分：奖励从哪来（规则 / 代码执行 / 人类偏好 / 模拟器）、rollout 规模、基础设施章节；
+      (3) 其它部分点到为止，给出阅读等级（精读 / 了解 / 略读）。
+      对照 [[2609.22978]]（DSec）、[[2609.19969]]（V4.1-Flash）的后训练流程。
+    items:
+      - {type: post, id: fineweb-v1, title: "FineWeb: decanting the web for the finest text data at scale（Hugging Face）", url: "https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1", why: "视频 00:01 预训练数据：15T token 的网页数据怎么抓、过滤、去重。了解即可，建立预训练数据管线的直觉"}
+      - {type: paper, id: "2203.02155", title: "Training language models to follow instructions with human feedback（InstructGPT）", url: "https://arxiv.org/abs/2203.02155", why: "视频 01:01 后训练 / 02:48 RLHF：SFT → reward model → PPO 三步法的奠基论文，后训练的标准起点"}
+      - {type: paper, id: "2501.12948", title: "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning", url: "https://arxiv.org/abs/2501.12948", why: "视频 02:27：纯 RL（GRPO + 规则奖励）涌现推理能力；可验证奖励里的代码执行正是沙箱进入后训练的入口"}
+      - {type: paper, id: "2407.21783", title: "The Llama 3 Herd of Models", url: "https://arxiv.org/abs/2407.21783", why: "视频 00:42 base 模型推理：92 页的完整生产记录；重点读 §3 预训练基础设施（16K GPU、故障与容错）和 §4 后训练（含代码执行反馈）"}
+      - {type: paper, id: "2017-silver-alphago-zero", title: "Mastering the game of Go without human knowledge（AlphaGo Zero, Nature 2017）", url: "https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf", why: "视频 02:42：RL 超越人类的经典案例（Move 37）；环境 = 模拟器，自我对弈的 rollout 规模，类比 agentic RL 中的沙箱"}
