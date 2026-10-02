@@ -89,6 +89,12 @@ posts:
     - {name: Fly.io Blog, type: rss, url: "https://fly.io/blog/feed.xml", weight: 1}
     - {name: Kubernetes Blog, type: rss, url: "https://kubernetes.io/feed.xml", weight: 0}
 
+    # ───────── 会议演讲 ─────────
+    # AI Engineer（World's Fair / Summit / Code 等）：每个 talk 页带完整逐字稿，可直接精读。
+    # 无 RSS；sitemap 的 lastmod 被批量刷新，靠“首次见到”判新。URL 带 11 位 YouTube ID 前缀，slug_strip 去掉再打分。
+    # weight 1：上千个 talk 以产品 / 应用为主，只让命中沙箱、RL、infra 等关键词的进候选。
+    - {name: AI Engineer Talks, type: sitemap, url: "https://ai.engineer/sitemap.xml", pattern: '^https://ai\.engineer/talks/[A-Za-z0-9_-]+$', slug_strip: '^[A-Za-z0-9_-]{11}-', weight: 1}
+
     # ───────── 业内大牛个人博客 ─────────
     - {name: Andrej Karpathy (bearblog), type: rss, url: "https://karpathy.bearblog.dev/feed/", weight: 4}
     - {name: Andrej Karpathy, type: rss, url: "https://karpathy.github.io/feed.xml", weight: 4}
