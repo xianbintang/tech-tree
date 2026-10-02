@@ -3,7 +3,7 @@ title: "MicroVM Snapshot Uniqueness / 快照克隆唯一性恢复"
 aliases: [snapshot clone uniqueness, VM 克隆唯一性, 快照恢复唯一性, MADV_WIPEONSUSPEND, SysGenId, VmGenId]
 created: 2026-09-26
 updated: 2026-09-26
-sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecracker]
+sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecracker, 2026-gensee-agentenv-microvm-fork]
 ---
 
 # MicroVM Snapshot Uniqueness / 快照克隆唯一性恢复
@@ -42,12 +42,14 @@ sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecrack
 - 只在单一 x86 机型（EC2 m5.12xlarge）上测量，跨 CPU 世代/ARM 平台的开销未知 [[2102.12892]]。
 - "VM 身份何时改变"缺乏对 serverless 场景明确适用的规则——Microsoft 现有的 VmGenId 变更规则（克隆/恢复/备份恢复触发,reboot/pause/resume/live migration 不触发）不一定适合 serverless,但本文没有给出 Lambda 实际采用的具体规则 [[2102.12892]]。
 - DSec（[[2609.22978]]）§6.3 描述的 microVM pause/resume 是"单实例挂起-恢复同一身份"，不涉及克隆出多个并发实例，因此本文的核心问题在 DSec 目前公开描述的机制下不直接适用；但 DSec 一周内维护 4,889 个 microVM 快照（Table 2），这些快照是否也被当作"启动多个独立沙箱的模板"使用、从而触发本文的问题，DSec 原文未说明，无法确认 [[2102.12892]]。
+- AgentENV（Kimi K3 的 Firecracker 沙箱层）的 fork 机制每次会把源 VM 当前的脏内存同步发布进一个**新**的不可变层再启动子实例，但第三方拆解只测了"单次 fork 一个子实例"的延迟，没有测试"同一暂停点并发 fork 出多个子实例"时，这个新层是否被多个子实例共享、子实例之间是否会复现本页讨论的克隆唯一性问题——与 DSec 一样，这是尚未被任何已读来源直接验证的场景，详见 [[microvm-fork-memory-cost]] [[2026-gensee-agentenv-microvm-fork]]。
 
 ## 相关概念
 
-[[microvm-placement]]、[[snapshot-layering]]
+[[microvm-placement]]、[[snapshot-layering]]、[[microvm-fork-memory-cost]]
 
 ## 相关来源
 
 - [[2102.12892]] — AWS Lambda 团队提出 MADV_WIPEONSUSPEND 与 SysGenId 两个 Linux 内核接口，解决 microVM 快照克隆后的实例唯一性问题
 - [[brooker-lambda-snapstart]] — Firecracker/Lambda 作者 Marc Brooker 的科普博文，直接引用本概念的论文原文，并补充了连接/协议状态这一类唯一性问题未覆盖的"克隆之痛"
+- [[2026-gensee-agentenv-microvm-fork]] — 第三方拆解 AgentENV 的 fork 机制，指出"并发 fork 多个子实例是否共享新层、是否触发克隆唯一性问题"是尚未被验证的开放场景（见「开放问题」）
