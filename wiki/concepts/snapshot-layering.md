@@ -3,7 +3,7 @@ title: "Snapshot Layering / 分层增量快照"
 aliases: [layered snapshots, incremental snapshot tree, 快照树, provenance-based deduplication, 分层快照]
 created: 2026-09-26
 updated: 2026-09-26
-sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes]
+sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes, 2026-gensee-agentenv-microvm-fork]
 ---
 
 # Snapshot Layering / 分层增量快照
@@ -23,6 +23,7 @@ sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lamb
 - **Provenance-based 去重 vs 事后扫描去重（对比 KSM）**：子快照本就是从父快照恢复而来，哪些页相同是天然已知的，不需要像 Kernel Samepage Merging 那样运行时后台扫描比对内容，因此没有 KSM 式的 CPU vs 内存权衡 [[brooker-lambda-snapstart]]。
 - **分层密钥管理**：不同层级可用不同加密密钥——公共组件（如内核、运行时）用服务侧密钥，客户数据用客户自己控制的密钥，只有一句话带过，未展开密钥派生/轮换/撤销机制 [[brooker-lambda-snapstart]]。
 - **与克隆/唯一性问题的关系**：分层快照解决的是"数据怎么分层存、怎么少传输"，不解决 [[microvm-snapshot-uniqueness]] 讨论的"克隆出的实例状态相同"问题——两者是快照复用场景下正交的两类工程挑战，通常需要同时处理。
+- **"追踪变化"与"发布变化后的内容"是两件不同的事**：AgentENV 的 fork 路径提供了一个具体反例，说明"增量/分层"本身不自动等价于"懒加载"——它用 `process_vm_readv` 把源 VM 的脏内存范围同步拷贝进一个新的不可变 OverlayBD 层，这个 capture 动作发生在 fork 端点返回之前；子实例对这份新层的 restore 才是懒加载（`MAP_PRIVATE` + 按需缺页）。分层快照减少的是"要搬运多少数据"，但谁在什么时间点把变化后的字节固化下来，是独立于分层与否的另一个设计维度，详见 [[microvm-fork-memory-cost]] [[2026-gensee-agentenv-microvm-fork]]。
 
 ## 工程要点与数字
 
@@ -43,10 +44,11 @@ sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lamb
 
 ## 相关概念
 
-[[microvm-snapshot-uniqueness]]、[[on-demand-image-loading]]
+[[microvm-snapshot-uniqueness]]、[[on-demand-image-loading]]、[[microvm-fork-memory-cost]]
 
 ## 相关来源
 
 - [[brooker-lambda-snapstart]] — Firecracker/Lambda 作者 Marc Brooker 提出分层快照树的设计思路：按 provenance 去重 + 分层密钥，声称最多减少 90% 数据搬运量
 - [[brooker-seven-years-of-firecracker]] — Aurora DSQL 案例：同一份快照的多个克隆实例共享未修改内存页，是与分层增量快照相邻但不同的省数据手段（见「开放问题」）
 - [[aws-lambda-microvms-agent-sandboxes]] — 又一个"从快照启动跳过初始化"的生产案例（AWS Lambda MicroVMs），但只用单层快照，未披露分层机制，也未讨论克隆唯一性问题
+- [[2026-gensee-agentenv-microvm-fork]] — 第三方对 AgentENV fork 机制的拆解，提供"追踪脏页"与"同步发布脏页内容"这一关键区分的具体实现案例，并实测发布动作随脏内存量线性增长的延迟代价

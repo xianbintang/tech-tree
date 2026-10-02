@@ -3,7 +3,7 @@ title: "Firecracker"
 aliases: [Firecracker VMM, AWS Firecracker, crosvm 衍生 VMM]
 created: 2026-09-26
 updated: 2026-09-26
-sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2020-anjali-firecracker-gvisor]
+sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2020-anjali-firecracker-gvisor, 2026-gensee-agentenv-microvm-fork]
 ---
 
 # Firecracker
@@ -22,6 +22,7 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 - **Jailer**：在 Firecracker 进程外再包一层 chroot + pid/net namespace + seccomp-bpf（白名单 24 syscall/30 ioctl）+ 降权，作为 VMM 本身被攻破时的第二道防线 [[2020-agache-firecracker]]。
 - **REST API**：通过 Unix socket 配置/启停 MicroVM，支持先配置后启动以降低感知延迟 [[2020-agache-firecracker]]。
 - **存储集成限制**：不支持 virtio-fs，只能走块设备透传；DSec 因此为 Firecracker 后端设计了 OverlayBD 格式镜像 + ublk 用户态块设备 + 分布式文件系统（3FS）按需加载的组合方案 [[2020-agache-firecracker]]（转引自 DSec §3.3）。
+- **快照恢复的懒加载语义**：官方快照支持文档描述的恢复路径是把内存 backing file 用 `MAP_PRIVATE` 映射给子进程——子实例不会在启动时把整份文件拷进新 RAM，vCPU 第一次触碰某页时才从 host page cache/backing storage 缺页取入，子实例写入时才产生私有匿名 CoW 页。这只回答"快照里已有的旧字节怎么进子实例"，不回答"fork 时新产生的脏字节怎么进入这份不可变镜像"——后者在 AgentENV 的实现里是另一段同步完成的独立步骤，两者合起来才是完整的 fork 延迟，详见 [[microvm-fork-memory-cost]]（转引自 Firecracker snapshot-support 文档，经 [[2026-gensee-agentenv-microvm-fork]] 转述）。
 
 ## 工程要点与数字
 
@@ -46,7 +47,7 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 
 ## 相关概念
 
-[[microvm-sandbox]]、[[rund]]、[[kata-containers]]、[[gvisor]]、[[lightvm]]
+[[microvm-sandbox]]、[[rund]]、[[kata-containers]]、[[gvisor]]、[[lightvm]]、[[microvm-fork-memory-cost]]
 
 ## 相关来源
 
@@ -54,3 +55,4 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 - [[2022-li-rund]] — 用 Kata-FC（Firecracker 作 hypervisor）做对比基线，揭示接入完整安全容器软件栈后 Firecracker 单层优化的局限
 - [[kata-containers-architecture]] — Kata Containers 架构文档，说明 Firecracker 作为 hypervisor 后端接入 Kata（Kata-FC 配置）时所在的通用架构位置
 - [[2020-anjali-firecracker-gvisor]] — 独立第三方内核代码覆盖率与微基准对比研究，给出 Firecracker 相对 gVisor/LXC 的量化数字（syscall 白名单、内核代码覆盖率、网络延迟、文件吞吐）
+- [[2026-gensee-agentenv-microvm-fork]] — 追代码到 AgentENV 对 Firecracker 快照恢复（`MAP_PRIVATE` 懒加载）与自研脏页同步发布机制的组合使用，并实测组合后的端到端 fork 延迟

@@ -3,7 +3,7 @@ title: "MicroVM 沙箱"
 aliases: [microVM, Firecracker sandbox, VM-level agent isolation, 轻量虚拟机, micro virtual machine, microVM isolation, 轻量虚拟机隔离, Firecracker microVM]
 created: 2026-09-26
 updated: 2026-09-27
-sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2023-huang-pvm, 2020-anjali-firecracker-gvisor, 2017-manco-lightvm, 2005-bellard-qemu]
+sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2023-huang-pvm, 2020-anjali-firecracker-gvisor, 2017-manco-lightvm, 2005-bellard-qemu, 2026-gensee-agentenv-microvm-fork]
 ---
 
 # MicroVM 沙箱
@@ -32,6 +32,7 @@ sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-co
 - **[[lightvm]] 是这条谱系更早、路线不同的前身**：2017 年就论证了"VM 隔离与容器级性能不是互斥取舍"这一核心命题,但走的是"Xen + unikernel/Tinyx 定制镜像 + 重写控制面（消除集中式 XenStore）"路线,而非"KVM + 精简 VMM、保留通用 guest 镜像"（[[firecracker]] 一脉）;两者共享同一论点但技术路径、时代硬件、评测场景都不可直接比较（LightVM 2.3ms/8000VM 是 unikernel 极限压测,Firecracker 150ms/10x 超卖是通用 Lambda 函数场景）,DSec 本身选择了后一条路线,可能是因为 agent 训练沙箱需要跑相对通用的 Linux 环境,unikernel 式"每应用定制镜像"的工程成本过高 [[2017-manco-lightvm]]。
 - **[[nested-virtualization|嵌套虚拟化]]是第三种取舍点，解决的是"host 没有 hypervisor 控制权"这个约束**：microVM（Firecracker）通常要求宿主开放 `/dev/kvm` 或 root 权限；当沙箱需要跑在租来的公有云 VM 里（而非自己控制的裸机）时，[[pvm]] 这类不依赖硬件虚拟化支持、对宿主 hypervisor 透明的软件嵌套虚拟化方案是候选出路，已在阿里云生产环境日均承载 10万+ 安全容器 [[2023-huang-pvm]]。但代价是嵌套虚拟化天然多一层地址转换，即便像 PVM 那样优化到"单次 world switch 成本降低一个数量级"，仍无法完全消除；DSec 自己的评测选择"排除嵌套虚拟化，microVM 直接跑裸机"，说明这条路线的适用前提是"没有 host 控制权"，而不是普适的隔离方案 [[2023-huang-pvm]]。
 - **agent 建环境即 microVM/容器通用**：DSec 支持 `pack_diff`——agent 可以在任意时刻对一个沙箱做增量磁盘快照，之后可作为新沙箱恢复，把交互式会话直接变成可复用环境，不需要独立的镜像构建流水线 [[2609.22978]]。
+- **microVM fork 的进程数无关性与脏内存代价是一体两面**：第三方对 AgentENV（Kimi K3 的 Firecracker 沙箱层）的拆解证实了本页第一条机制（guest 进程树编码在 guest 内核内存里、host 不需要单独序列化）的另一面影响——fork 延迟几乎不随 guest 进程数增长，但 AgentENV 当前实现会在 fork 端点返回前把源 VM 的脏内存同步拷贝进新的不可变层，这部分 capture 代价随脏内存量线性增长（实测 1GiB guest 0→512MiB 脏内存：360ms→642ms）。这与基于 CRIU 重建进程树的容器 fork（如 TClone）正好是相反的取舍：后者子实例可以更快可用，但延迟随进程数增长。详见 [[microvm-fork-memory-cost]] [[2026-gensee-agentenv-microvm-fork]]。
 
 ## 工程要点与数字
 
@@ -59,7 +60,7 @@ sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-co
 
 ## 相关概念
 
-[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]、[[sandbox-image-distribution]]、[[sandbox-density-overcommit]]、[[agentic-rollout-preemption]]
+[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]、[[sandbox-image-distribution]]、[[sandbox-density-overcommit]]、[[agentic-rollout-preemption]]、[[microvm-fork-memory-cost]]
 
 ## 相关来源
 
@@ -72,3 +73,4 @@ sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-co
 - [[kata-containers-architecture]] — Kata Containers 官方架构文档，"安全容器"（VM 套容器）路线的标准架构说明：shimv2、三层环境模型、guest assets、agent 通信、存储两条路径
 - [[2023-huang-pvm]] — 提出第三种隔离取舍点：不依赖硬件支持、对宿主透明的软件嵌套虚拟化，解决"host 无 hypervisor 控制权"场景下的强隔离需求
 - [[2020-anjali-firecracker-gvisor]] — 独立第三方内核代码覆盖率与微基准对比研究，量化 [[gvisor]] 与 Firecracker 两条 microVM/paravirtualization 路线的实际差异
+- [[2026-gensee-agentenv-microvm-fork]] — 第三方对 AgentENV fork 机制的代码级拆解与实测，验证并量化了"microVM fork 进程数无关、但脏内存同步发布代价随之线性增长"这一机制
