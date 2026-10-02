@@ -47,8 +47,10 @@ def _keep(feed: dict, title: str) -> bool:
     return not pat or re.search(pat, title, re.I) is not None
 
 
-def _slug_title(url: str) -> str:
+def _slug_title(url: str, strip: str | None = None) -> str:
     slug = url.rstrip("/").rsplit("/", 1)[-1]
+    if strip:  # e.g. a video-ID prefix that carries no meaning for keyword scoring
+        slug = re.sub(strip, "", slug)
     return slug.replace("-", " ").replace("_", " ").strip().capitalize()
 
 
@@ -136,7 +138,7 @@ def fetch_sitemap(feed: dict, since: date, seen: set[str], scorer: Scorer) -> tu
     for loc, _, lastmod in unseen:
         if lastmod and date.fromisoformat(lastmod) < since:
             continue
-        title = _slug_title(loc)
+        title = _slug_title(loc, feed.get("slug_strip"))
         if _keep(feed, title):
             posts.append(_post(loc, title, "", feed, lastmod, scorer))
     return posts, []

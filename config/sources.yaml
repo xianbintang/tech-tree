@@ -89,6 +89,12 @@ posts:
     - {name: Fly.io Blog, type: rss, url: "https://fly.io/blog/feed.xml", weight: 1}
     - {name: Kubernetes Blog, type: rss, url: "https://kubernetes.io/feed.xml", weight: 0}
 
+    # ───────── 会议演讲 ─────────
+    # AI Engineer（World's Fair / Summit / Code 等）：每个 talk 页带完整逐字稿，可直接精读。
+    # 无 RSS；sitemap 的 lastmod 被批量刷新，靠“首次见到”判新。URL 带 11 位 YouTube ID 前缀，slug_strip 去掉再打分。
+    # weight 1：上千个 talk 以产品 / 应用为主，只让命中沙箱、RL、infra 等关键词的进候选。
+    - {name: AI Engineer Talks, type: sitemap, url: "https://ai.engineer/sitemap.xml", pattern: '^https://ai\.engineer/talks/[A-Za-z0-9_-]+$', slug_strip: '^[A-Za-z0-9_-]{11}-', weight: 1}
+
     # ───────── 业内大牛个人博客 ─────────
     - {name: Andrej Karpathy (bearblog), type: rss, url: "https://karpathy.bearblog.dev/feed/", weight: 4}
     - {name: Andrej Karpathy, type: rss, url: "https://karpathy.github.io/feed.xml", weight: 4}
@@ -105,6 +111,7 @@ posts:
     - {name: Eugene Yan, type: rss, url: "https://eugeneyan.com/rss/", weight: 2}
     - {name: Hamel Husain, type: rss, url: "https://hamel.dev/index.xml", weight: 2}
     - {name: Jay Alammar (Language Models & Co.), type: rss, url: "https://newsletter.languagemodels.co/feed", weight: 2}
+    - {name: AI News (smol.ai), type: rss, url: "https://news.smol.ai/rss.xml", weight: 0}   # 每日 AI 新闻汇总（Karpathy 推荐），原 buttondown.com/ainews
     - {name: Jack Clark (Import AI), type: rss, url: "https://importai.substack.com/feed", weight: 1}
     - {name: Philipp Schmid, type: rss, url: "https://www.philschmid.de/rss", weight: 1}
     - {name: Answer.AI (Jeremy Howard), type: rss, url: "https://www.answer.ai/index.xml", weight: 1}
