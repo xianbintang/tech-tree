@@ -1,0 +1,377 @@
+# 订阅源历史内容精选（来源：config/sources.yaml 各源的存量文章 / 演讲）。
+# 生成方式：抓取所有 post 源的全部历史（约 5500 条），关键词打分 + 人工挑选，排除已读，按主题分 8 类、每类 8 篇。
+# 新增条目后运行：uv run python -m pipeline.reading_list create config/reading-lists/feeds-backlog.yaml
+
+name: feeds-backlog
+labels:
+- reading-list
+- feeds-backlog
+categories:
+- key: A
+  title: 沙箱隔离与运行时（一线工程实践）
+  description: |
+    各家怎么把 agent / AI 生成代码关进沙箱：隔离级别选择、文件系统与网络两层隔离、多 OS（Windows）、凭据与权限、形式化验证的隔离。
+    精读时对照 [[2609.22978]]（DSec）与 [[microvm-sandbox]]，整理每家的隔离栈、威胁模型与运维代价，标出我们平台缺的能力。
+  items:
+  - type: post
+    id: 2026-09-30-faster-agent-sandboxes
+    title: Cloudflare Containers, rebuilt to scale agent sandboxes（Cloudflare Blog）
+    url: https://blog.cloudflare.com/faster-agent-sandboxes/
+    why: Cloudflare 重做 Containers 以承载 agent 沙箱：调度、冷启动、密度的一手工程细节
+  - type: post
+    id: 2026-09-28-arrakis-build-ai-sandbox-from-scratch
+    title: 'Arrakis: How To Build An AI Sandbox From Scratch（AI Engineer Talks）'
+    url: https://ai.engineer/talks/wsFd22SL1s8-arrakis-build-ai-sandbox-from-scratch
+    why: 从零搭 AI 沙箱（microVM、快照、恢复），和我们平台同类实现
+  - type: post
+    id: 2026-09-28-why-you-need-sandbox-ai-generated-code
+    title: Why, and how you need to sandbox AI-Generated Code?（AI Engineer Talks）
+    url: https://ai.engineer/talks/AHtGAgQ0Q_Q-why-you-need-sandbox-ai-generated-code
+    why: AI 生成代码为什么必须进沙箱：威胁模型与隔离级别选择
+  - type: post
+    id: 2025-11-03-claude-code-sandboxing
+    title: Making Claude Code more secure and autonomous with sandboxing（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/claude-code-sandboxing
+    why: Anthropic 的 Claude Code 沙箱：文件系统 + 网络两层隔离的落地做法
+  - type: post
+    id: 2026-06-06-how-we-contain-claude
+    title: How we contain Claude across products（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/how-we-contain-claude
+    why: Anthropic 如何约束 Claude 的执行：隔离、权限与审计
+  - type: post
+    id: 2026-10-01-building-codex-windows-sandbox
+    title: Building a safe, effective sandbox to enable Codex on Windows（OpenAI Engineering）
+    url: https://openai.com/index/building-codex-windows-sandbox/
+    why: OpenAI 做 Windows 沙箱：多 OS 支持的工程难点
+  - type: post
+    id: 2026-05-08-running-codex-safely
+    title: Running Codex safely at OpenAI（OpenAI News）
+    url: https://openai.com/index/running-codex-safely
+    why: OpenAI 内部安全运行 Codex 的做法：网络策略、凭据、权限
+  - type: post
+    id: 2026-06-10-ec2s-formally-verified-isolation-engine-provides-m
+    title: EC2’s formally verified “isolation engine” provides mathematical assurance of isolation（Amazon Science）
+    url: https://www.amazon.science/blog/ec2s-formally-verified-isolation-engine-provides-mathematical-assurance-of-virtual-machine-isolation
+    why: EC2 形式化验证的隔离引擎：强隔离的另一条路线
+- key: B
+  title: 托管 agent 计算平台与沙箱网络
+  description: |
+    把“给 agent 一台计算机”做成产品：Fly Sprites、OpenAI Responses 计算机环境、Anthropic / Gemini Managed Agents，以及 Lambda 的网络工程。
+    精读时整理：持久化 / 快照 / 计费模型、brain 与 hands 解耦的接口、网络隔离与带宽、控制面设计；网络相关内容同步给 #40 沙箱网络专题。
+  items:
+  - type: post
+    id: 2026-01-14-design-and-implementation
+    title: The Design & Implementation of Sprites（Fly.io Blog）
+    url: https://fly.io/blog/design-and-implementation/
+    why: Fly.io Sprites：面向 agent 的持久化 microVM（快照 / 恢复 / 计费）设计
+  - type: post
+    id: 2026-09-03-sprites-mcp
+    title: Your Agent Speaks MCP. Give It a Computer.（Fly.io Blog）
+    url: https://fly.io/blog/sprites-mcp/
+    why: 给 agent 一台计算机：Fly Machines 作为 agent 执行环境
+  - type: post
+    id: 2026-09-23-equip-responses-api-computer-environment
+    title: 'From model to agent: Equipping the Responses API with a computer environment（OpenAI Engineering）'
+    url: https://openai.com/index/equip-responses-api-computer-environment/
+    why: OpenAI Responses API 的计算机环境：托管沙箱如何对外暴露
+  - type: post
+    id: 2026-04-24-managed-agents
+    title: 'Scaling Managed Agents: Decoupling the brain from the hands（Anthropic Engineering）'
+    url: https://www.anthropic.com/engineering/managed-agents
+    why: Anthropic Managed Agents：托管 agent 运行时的产品与架构
+  - type: post
+    id: 2026-09-28-what-if-network-was-sandbox
+    title: What if the network was the sandbox?（AI Engineer Talks）
+    url: https://ai.engineer/talks/BM2JX9hqsVQ-what-if-network-was-sandbox
+    why: '把网络当作沙箱边界：与 #40 沙箱网络专题直接相关'
+  - type: post
+    id: 2026-04-22-the-invisible-engineering-behind-lambdas-network-h
+    title: The invisible engineering behind Lambda’s network（All Things Distributed (Werner Vogels)）
+    url: https://www.allthingsdistributed.com/2026/04/the-invisible-engineering-behind-lambdas-network.html?utm_campaign=inbound&utm_source=rss
+    why: Lambda 网络背后的工程：大规模 microVM 网络如何做
+  - type: post
+    id: 2026-09-28-improving-lambda-function-latency-with-scalable-ne
+    title: Improving Lambda function latency with scalable network bandwidth（AWS Compute Blog）
+    url: https://aws.amazon.com/blogs/compute/improving-lambda-function-latency-with-scalable-network-bandwidth/
+    why: Lambda 按需扩展网络带宽：沙箱网络性能隔离
+  - type: post
+    id: 2026-06-10-how-managed-agents-work
+    title: How Gemini Managed Agents Works under the Hood（Philipp Schmid）
+    url: https://www.philschmid.de/how-managed-agents-work
+    why: Gemini Managed Agents 底层实现：托管 agent 运行时与沙箱的架构
+- key: C
+  title: Agent harness 与长程执行
+  description: |
+    harness（agent loop 外壳）是 RL 框架与执行环境之间的那一层：长程任务的状态、检查点、恢复、通信协议、基础设施噪声。
+    精读时整理：harness 对沙箱的生命周期、持久化、时延、可观测要求；对照 #72（D 类 RL 框架）的笔记。
+  items:
+  - type: post
+    id: 2025-11-26-effective-harnesses-for-long-running-agents
+    title: Effective harnesses for long-running agents（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
+    why: 长程 agent 的 harness 设计：状态、检查点、恢复
+  - type: post
+    id: 2026-03-24-harness-design-long-running-apps
+    title: Harness design for long-running application development（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/harness-design-long-running-apps
+    why: 长时间运行应用的 harness：对沙箱生命周期与持久化的要求
+  - type: post
+    id: 2026-10-01-harness-engineering
+    title: 'Harness engineering: leveraging Codex in an agent-first world（OpenAI Engineering）'
+    url: https://openai.com/index/harness-engineering/
+    why: OpenAI 的 harness 工程：agent loop 与执行环境的接口
+  - type: post
+    id: 2026-09-22-unrolling-the-codex-agent-loop
+    title: Unrolling the Codex agent loop（OpenAI Engineering）
+    url: https://openai.com/index/unrolling-the-codex-agent-loop/
+    why: 拆解 Codex agent loop：每一步落到沙箱上的调用
+  - type: post
+    id: 2026-09-22-unlocking-the-codex-harness
+    title: 'Unlocking the Codex harness: how we built the App Server（OpenAI Engineering）'
+    url: https://openai.com/index/unlocking-the-codex-harness/
+    why: Codex harness 开放：框架层与执行环境的边界
+  - type: post
+    id: 2026-07-04-2026-07-04-harness
+    title: Harness Engineering for Self-Improvement（Lilian Weng）
+    url: https://lilianweng.github.io/posts/2026-07-04-harness/
+    why: Lilian Weng 谈自我改进的 harness 工程
+  - type: post
+    id: 2026-04-24-infrastructure-noise
+    title: Quantifying infrastructure noise in agentic coding evals（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/infrastructure-noise
+    why: 基础设施噪声对 agent 评测的影响：沙箱资源波动如何污染结果
+  - type: post
+    id: 2026-09-23-speeding-up-agentic-workflows-with-websockets
+    title: Speeding up agentic workflows with WebSockets in the Responses API（OpenAI Engineering）
+    url: https://openai.com/index/speeding-up-agentic-workflows-with-websockets/
+    why: 用 WebSocket 加速 agentic 工作流：环境交互的通信开销
+- key: D
+  title: Agentic RL 训练与 rollout 工程（博客）
+  description: |
+    rollout 系统的工程经验：环境标准生态、rollout 加速、训推一致性、推理确定性、Trace / token ID 记录、on-policy 蒸馏。
+    精读时整理：哪些问题来自执行环境（并发、长尾、非确定性），沙盒平台能帮上什么。
+  items:
+  - type: post
+    id: 2026-09-28-everything-is-rollout
+    title: Everything Is a Rollout — Alex Shaw + Ryan Marten, Terminal-Bench, Harbor, Laude Institute（AI Engineer Talks）
+    url: https://ai.engineer/talks/jRCpXUjz4CI-everything-is-rollout
+    why: “一切都是 rollout”：rollout 系统视角看 agentic RL
+  - type: post
+    id: 2026-01-27-gpt-oss-agentic-rl
+    title: 'Unlocking Agentic RL Training for GPT-OSS: A Practical Retrospective（Hugging Face Blog）'
+    url: https://huggingface.co/blog/LinkedIn/gpt-oss-agentic-rl
+    why: GPT-OSS agentic RL 训练复盘：环境、并发、稳定性的实战经验
+  - type: post
+    id: 2026-06-08-openenv-agentic-rl
+    title: The Open Source Community is backing OpenEnv for Agentic RL（Hugging Face Blog）
+    url: https://huggingface.co/blog/openenv-agentic-rl
+    why: OpenEnv 社区进展：环境标准的生态（接 B 类 OpenEnv 笔记）
+  - type: post
+    id: 2026-04-24-distribution-aware-speculative-decoding
+    title: Accelerate RL rollouts by up to 50% with distribution-aware speculative decoding（Together AI Blog）
+    url: https://www.together.ai/blog/distribution-aware-speculative-decoding
+    why: 用分布感知的投机解码加速 RL rollout
+  - type: post
+    id: 2026-09-14-2026-09-14-rl-kernel-v0-1-0-train-rollout-bitwise
+    title: 'vime × RL-Kernel × AMD: Bitwise Train–Rollout Consistency on ROCm（vLLM Blog）'
+    url: https://vllm.ai/blog/2026-09-14-rl-kernel-v0-1-0-train-rollout-bitwise-consistency
+    why: 训练与 rollout 逐位一致：训推不一致问题的工程解
+  - type: post
+    id: 2026-07-09-capturing-token-ids-during-agentic-interactions-fo
+    title: Capturing token IDs during agentic interactions for better reinforcement learning（Amazon Science）
+    url: https://www.amazon.science/blog/capturing-token-ids-during-agentic-interactions-for-better-reinforcement-learning
+    why: agentic 交互中记录 token ID 以改进 RL：Trace 格式问题
+  - type: post
+    id: 2025-09-10-defeating-nondeterminism-in-llm-inference
+    title: Defeating Nondeterminism in LLM Inference（Thinking Machines）
+    url: https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/
+    why: 推理非确定性的根因与消除：可复现 rollout 的基础
+  - type: post
+    id: 2025-10-27-on-policy-distillation
+    title: On-Policy Distillation（Thinking Machines）
+    url: https://thinkingmachines.ai/blog/on-policy-distillation/
+    why: On-policy 蒸馏：后训练的低成本路线
+- key: E
+  title: Reward hacking、评测可信度与环境质量
+  description: |
+    评测与训练环境的可信度：reward hacking、评测污染、基础设施噪声、评测意识、超大规模评测、内部 agent 监控。
+    精读时整理：哪些作弊 / 噪声要靠沙箱层来堵或消除（隔离、资源稳定性、审计日志），对照 #71（C 类）论文。
+  items:
+  - type: post
+    id: 2024-11-28-2024-11-28-reward-hacking
+    title: Reward Hacking in Reinforcement Learning（Lilian Weng）
+    url: https://lilianweng.github.io/posts/2024-11-28-reward-hacking/
+    why: Lilian Weng 的 reward hacking 综述：防作弊的理论地图
+  - type: post
+    id: 2026-02-23-why-we-no-longer-evaluate-swe-bench-verified
+    title: Why we no longer evaluate SWE-bench Verified（OpenAI News）
+    url: https://openai.com/index/why-we-no-longer-evaluate-swe-bench-verified
+    why: OpenAI 为什么不再用 SWE-bench Verified：评测污染与环境问题
+  - type: post
+    id: 2026-10-02-separating-signal-from-noise-coding-evaluations
+    title: Separating signal from noise in coding evaluations（OpenAI Research）
+    url: https://openai.com/index/separating-signal-from-noise-coding-evaluations/
+    why: coding 评测中区分信号与噪声：环境稳定性对评测的影响
+  - type: post
+    id: 2026-03-18-demystifying-evals-for-ai-agents
+    title: Demystifying evals for AI agents（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
+    why: Anthropic 的 agent 评测方法论
+  - type: post
+    id: 2026-03-18-eval-awareness-browsecomp
+    title: Eval awareness in Claude Opus 4.6’s BrowseComp performance（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/eval-awareness-browsecomp
+    why: 模型的“评测意识”：环境被识别后的作弊风险
+  - type: post
+    id: 2026-09-28-swe-rebench-lessons-from-evaluating-coding-agents
+    title: 'SWE-rebench: Lessons from Evaluating Coding Agents on Real Software Engineering Tasks（AI Engineer Talks）'
+    url: https://ai.engineer/talks/wcUJWP6WpGM-swe-rebench-lessons-from-evaluating-coding-agents
+    why: SWE-rebench 团队的经验（接 C 类论文）
+  - type: post
+    id: 2026-09-28-swe-marathon-evaluating-coding-agents-at-billion
+    title: 'SWE-Marathon: Evaluating Coding Agents at Billion-Token Scale（AI Engineer Talks）'
+    url: https://ai.engineer/talks/Rx8f05JI_WA-swe-marathon-evaluating-coding-agents-at-billion
+    why: 超大规模 coding agent 评测：环境规模化
+  - type: post
+    id: 2026-10-02-how-we-monitor-internal-coding-agents-misalignment
+    title: How we monitor internal coding agents for misalignment（OpenAI Publications）
+    url: https://openai.com/index/how-we-monitor-internal-coding-agents-misalignment/
+    why: OpenAI 如何监控内部 coding agent 的失准行为：沙箱侧可观测
+- key: F
+  title: 调度、资源与控制面
+  description: |
+    调度与超卖的原语和工程：K8s 原地扩缩容 / 抢占 / 工作负载感知调度 / PSI 指标、时变容量调度、多租户 GPU 集群、可扩展控制面、分配求解器。
+    精读时同步给 #41 资源超卖专题。
+  items:
+  - type: post
+    id: 2026-09-10-kubernetes-v1-37-scheduler-preemption-for-in-place
+    title: 'Kubernetes v1.37: Scheduler Preemption for In-Place Pod Resize (Alpha)（Kubernetes Blog）'
+    url: https://kubernetes.io/blog/2026/09/10/kubernetes-v1-37-scheduler-preemption-for-in-place-pod-resize-alpha/
+    why: K8s 原地扩缩容 + 抢占：超卖与弹性的调度原语
+  - type: post
+    id: 2026-09-08-kubernetes-v1-37-advancing-workload-aware-scheduli
+    title: 'Kubernetes v1.37: Advancing Workload-Aware Scheduling（Kubernetes Blog）'
+    url: https://kubernetes.io/blog/2026/09/08/kubernetes-v1-37-advancing-workload-aware-scheduling/
+    why: K8s 1.37 工作负载感知调度（gang 等）
+  - type: post
+    id: 2026-09-15-kubernetes-v1-37-pod-level-resource-managers-beta
+    title: 'Kubernetes v1.37: Pod-Level Resource Managers graduated to Beta（Kubernetes Blog）'
+    url: https://kubernetes.io/blog/2026/09/15/kubernetes-v1-37-pod-level-resource-managers-beta/
+    why: K8s Pod 级资源管理器：细粒度资源分配
+  - type: post
+    id: 2026-05-12-kubernetes-v1-36-psi-metrics-ga
+    title: 'Kubernetes v1.36: PSI Metrics for Kubernetes Graduates to GA（Kubernetes Blog）'
+    url: https://kubernetes.io/blog/2026/05/12/kubernetes-v1-36-psi-metrics-ga/
+    why: PSI 压力指标 GA：超卖时的资源压力信号
+  - type: post
+    id: 2026-02-11-scheduling-in-a-changing-world-maximizing-throughp
+    title: 'Scheduling in a changing world: Maximizing throughput with time-varying capacity（Google Research）'
+    url: https://research.google/blog/scheduling-in-a-changing-world-maximizing-throughput-with-time-varying-capacity/
+    why: Google：容量随时间变化时的吞吐最大化调度
+  - type: post
+    id: 2026-04-21-multi-tenant-gpu-cluster-design-for-ai-native-team
+    title: 'Capacity without conflict: A guide to multi-tenant GPU cluster design for AI-native teams（Together AI Blog）'
+    url: https://www.together.ai/blog/multi-tenant-gpu-cluster-design-for-ai-native-teams
+    why: 多租户 GPU 集群设计：配额、隔离与共享
+  - type: post
+    id: 2026-08-04-on-building-scalable-control-planes-html-utm-campa
+    title: On building scalable control planes（All Things Distributed (Werner Vogels)）
+    url: https://www.allthingsdistributed.com/2026/08/on-building-scalable-control-planes.html?utm_campaign=inbound&utm_source=rss
+    why: Werner Vogels 谈可扩展控制面：沙箱平台控制面设计参考
+  - type: post
+    id: 2026-09-21-rebalancer-generic-high-performance-library-assign
+    title: 'Open-Sourcing Rebalancer: A Generic, High-Performance Library for Solving Assignment Problems（Meta Engineering）'
+    url: https://engineering.fb.com/2026/09/21/open-source/rebalancer-generic-high-performance-library-assignment-problems/
+    why: Meta Rebalancer：通用分配 / 重平衡求解库
+- key: G
+  title: 存储、网络与 KV cache
+  description: |
+    数据面基础设施：KV cache 分层卸载与路由、上下文硬盘缓存、S3 文件语义、大规模存储扩展、RDMA / 多路径传输、数据中心网络拓扑。
+    精读时同步给 #42 云存储与 IO 专题。
+  items:
+  - type: post
+    id: 2026-09-10-2026-09-10-tiered-kv-offloading
+    title: Tiered KV Cache Offloading in vLLM（vLLM Blog）
+    url: https://vllm.ai/blog/2026-09-10-tiered-kv-offloading
+    why: 'vLLM 分层 KV cache 卸载（接 #42 存储专题）'
+  - type: post
+    id: 2026-09-28-kv-cache-aware-routing-p-d-disaggregation
+    title: KV Cache-Aware Routing and P/D Disaggregation on Kubernetes（AI Engineer Talks）
+    url: https://ai.engineer/talks/YXowceUKYJI-kv-cache-aware-routing-p-d-disaggregation
+    why: KV cache 感知路由与 PD 分离
+  - type: post
+    id: 2024-08-02-context-caching
+    title: DeepSeek API 上下文硬盘缓存（Context Caching on Disk）（DeepSeek News）
+    url: https://www.deepseek.com/en/news/context-caching/
+    why: DeepSeek 磁盘上下文缓存：KV cache 落盘的早期产品化
+  - type: post
+    id: 2026-04-07-s3-files-and-the-changing-face-of-s3-html-utm-camp
+    title: S3 Files and the changing face of S3（All Things Distributed (Werner Vogels)）
+    url: https://www.allthingsdistributed.com/2026/04/s3-files-and-the-changing-face-of-s3.html?utm_campaign=inbound&utm_source=rss
+    why: S3 Files：对象存储的文件语义
+  - type: post
+    id: 2026-10-01-scaling-storage-one-billion-users-part-one
+    title: Rapidly scaling online storage to serve over 1 billion ChatGPT users（OpenAI Engineering）
+    url: https://openai.com/index/scaling-storage-one-billion-users-part-one/
+    why: OpenAI 存储扩展到十亿用户
+  - type: post
+    id: 2026-08-24-metaroce-rdma-transport-ai-ethernet
+    title: 'MetaRoCE: A New RDMA Transport Built for AI-Scale Ethernet（Meta Engineering）'
+    url: https://engineering.fb.com/2026/08/24/networking-traffic/metaroce-rdma-transport-ai-ethernet/
+    why: MetaRoCE：面向 AI 规模以太网的 RDMA 传输
+  - type: post
+    id: 2026-06-03-mrc-supercomputer-networking
+    title: Unlocking large scale AI training networks with MRC (Multipath Reliable Connection)（OpenAI Engineering）
+    url: https://openai.com/index/mrc-supercomputer-networking/
+    why: OpenAI 超算网络
+  - type: post
+    id: 2026-05-28-how-flat-is-replacing-fat-in-aws-data-center-netwo
+    title: How flat is replacing fat in AWS data center networks（Amazon Science）
+    url: https://www.amazon.science/blog/how-flat-is-replacing-fat-in-aws-data-center-networks
+    why: AWS 数据中心网络从 fat-tree 到扁平化
+- key: H
+  title: 基础必读（经典长文）
+  description: |
+    经典长文补基础：agent 综述、test-time compute、并行训练、推理优化、策略梯度、agent 构建方法论、context engineering、GPU batching。
+    笔记可以写得精简，重点放在与沙箱 / 调度 / 训练平台相关的部分。
+  items:
+  - type: post
+    id: 2023-06-23-2023-06-23-agent
+    title: LLM Powered Autonomous Agents（Lilian Weng）
+    url: https://lilianweng.github.io/posts/2023-06-23-agent/
+    why: Lilian Weng 的 agent 经典综述
+  - type: post
+    id: 2025-05-01-2025-05-01-thinking
+    title: Why We Think（Lilian Weng）
+    url: https://lilianweng.github.io/posts/2025-05-01-thinking/
+    why: Lilian Weng 谈 test-time compute 与思考
+  - type: post
+    id: 2021-09-24-2021-09-25-train-large
+    title: How to Train Really Large Models on Many GPUs?（Lilian Weng）
+    url: https://lilianweng.github.io/posts/2021-09-25-train-large/
+    why: 大模型并行训练的经典梳理
+  - type: post
+    id: 2023-01-10-2023-01-10-inference-optimization
+    title: Large Transformer Model Inference Optimization（Lilian Weng）
+    url: https://lilianweng.github.io/posts/2023-01-10-inference-optimization/
+    why: 推理优化经典梳理
+  - type: post
+    id: 2018-04-08-2018-04-08-policy-gradient
+    title: Policy Gradient Algorithms（Lilian Weng）
+    url: https://lilianweng.github.io/posts/2018-04-08-policy-gradient/
+    why: 策略梯度算法的经典梳理：RL 基础
+  - type: post
+    id: 2026-08-10-building-effective-agents
+    title: Building Effective AI Agents（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    why: Anthropic 的 agent 构建方法论
+  - type: post
+    id: 2026-01-06-effective-context-engineering-for-ai-agents
+    title: Effective context engineering for AI agents（Anthropic Engineering）
+    url: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
+    why: Anthropic 的 context engineering
+  - type: post
+    id: 2024-03-01-how-does-batching-work-on-modern
+    title: How does batching work on modern GPUs?（Finbarr Timbers (Artificial Fintelligence)）
+    url: https://www.artfintel.com/p/how-does-batching-work-on-modern
+    why: GPU 上 batching 的原理：推理吞吐基础
