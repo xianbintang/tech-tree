@@ -2,8 +2,8 @@
 title: "Firecracker"
 aliases: [Firecracker VMM, AWS Firecracker, crosvm 衍生 VMM]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2020-anjali-firecracker-gvisor]
+updated: 2026-10-02
+sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2020-anjali-firecracker-gvisor, 2605.22781]
 ---
 
 # Firecracker
@@ -22,6 +22,7 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 - **Jailer**：在 Firecracker 进程外再包一层 chroot + pid/net namespace + seccomp-bpf（白名单 24 syscall/30 ioctl）+ 降权，作为 VMM 本身被攻破时的第二道防线 [[2020-agache-firecracker]]。
 - **REST API**：通过 Unix socket 配置/启停 MicroVM，支持先配置后启动以降低感知延迟 [[2020-agache-firecracker]]。
 - **存储集成限制**：不支持 virtio-fs，只能走块设备透传；DSec 因此为 Firecracker 后端设计了 OverlayBD 格式镜像 + ublk 用户态块设备 + 分布式文件系统（3FS）按需加载的组合方案 [[2020-agache-firecracker]]（转引自 DSec §3.3）。
+- **Guest 内核可被深度定制而不影响 VMM 本身**：[[sandbox-checkpoint-rollback|DeltaBox]] 在 Firecracker microVM 的 guest 侧跑自定义 Linux 6.8 内核，内置改造过的 overlayfs 模块（DeltaFS，支持运行时动态插拔层栈），VMM 层和 host 侧 KVM 保持不变（stock kernel）——说明 Firecracker 的"极简 VMM"边界允许 guest 内核做深度定制，这类改造不需要触碰 host 虚拟化栈，是比定制 host 内核（如 CubeSandbox 的 `KVM_PVM`）更低部署成本的路线 [[2605.22781]]。
 
 ## 工程要点与数字
 
@@ -46,7 +47,7 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 
 ## 相关概念
 
-[[microvm-sandbox]]、[[rund]]、[[kata-containers]]、[[gvisor]]、[[lightvm]]
+[[microvm-sandbox]]、[[rund]]、[[kata-containers]]、[[gvisor]]、[[lightvm]]、[[sandbox-checkpoint-rollback]]
 
 ## 相关来源
 
@@ -54,3 +55,4 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 - [[2022-li-rund]] — 用 Kata-FC（Firecracker 作 hypervisor）做对比基线，揭示接入完整安全容器软件栈后 Firecracker 单层优化的局限
 - [[kata-containers-architecture]] — Kata Containers 架构文档，说明 Firecracker 作为 hypervisor 后端接入 Kata（Kata-FC 配置）时所在的通用架构位置
 - [[2020-anjali-firecracker-gvisor]] — 独立第三方内核代码覆盖率与微基准对比研究，给出 Firecracker 相对 gVisor/LXC 的量化数字（syscall 白名单、内核代码覆盖率、网络延迟、文件吞吐）
+- [[2605.22781]] — DeltaBox：在 Firecracker guest 内核里深度定制 overlayfs（DeltaFS）实现毫秒级 checkpoint/rollback，host 侧 KVM 保持 stock kernel 不变

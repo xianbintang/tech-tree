@@ -2,8 +2,8 @@
 title: "Snapshot Layering / 分层增量快照"
 aliases: [layered snapshots, incremental snapshot tree, 快照树, provenance-based deduplication, 分层快照]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes]
+updated: 2026-10-02
+sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lambda-microvms-agent-sandboxes, 2605.22781]
 ---
 
 # Snapshot Layering / 分层增量快照
@@ -39,14 +39,16 @@ sources: [brooker-lambda-snapstart, brooker-seven-years-of-firecracker, aws-lamb
 - 具体的密钥派生/轮换/撤销机制未披露，对比 [[2023-brooker-lambda-container-loading]] 收敛加密方案的详尽程度，这部分明显只是简化科普 [[brooker-lambda-snapstart]]。
 - 分层快照针对的是**快照内存**的去重与分发，与 [[on-demand-image-loading]] 里 [[2023-brooker-lambda-container-loading]] 针对**容器镜像**的按需加载+ 收敛加密去重是否共享底层基础设施，两篇文本均未说明，仅问题描述与时间线高度吻合（详见 [[on-demand-image-loading]] 「开放问题」）。
 - DSec（[[2609.22978]]）§6.3 的 microVM pause/resume 是单实例挂起-恢复同一身份，不是本页讨论的"多层快照树 + 克隆多实例"场景，DSec 是否在内部使用了类似的分层快照机制，原文未说明，无法确认。
+- **[[sandbox-checkpoint-rollback|DeltaBox]] 是本页机制在"文件系统层"而非"内存快照层"的一个具体工程实现，粒度更细**：DeltaBox 的 DeltaFS 把 overlayfs 层栈做成运行时可动态插入/移除的栈（checkpoint = 插入新 upper 层，rollback = $O(1)$ 层移除），天然是 provenance-based 去重（copy-up 时用 XFS reflink 共享未修改的 extent，而不是事后扫描比对），逻辑与本页"分层增量快照"的核心思路一致，但作用对象是**文件系统层**而不是**内存页**；DeltaBox 同时用独立的 CRIU dump + 模板 fork（页表级 CoW）处理内存态，两条机制分别对应本页讨论的"文件/镜像层分层"与"内存页共享"两个维度，首次把二者在同一个系统里耦合为原子一致的 checkpoint 单元 [[2605.22781]]。
 - AWS Lambda MicroVMs 的"从快照启动"（[[aws-lambda-microvms-agent-sandboxes]]）是本页机制的又一个生产实例，但公开描述里只有单层快照（镜像构建完成后打一次快照，之后所有 session 都从这一份启动），未提及多阶段分层快照树；与 DSec §6.1 的 `pack_diff`（把交互式 session 的增量磁盘快照直接变成可复用环境构建产物，本身会形成一条不断增长的快照演化链）相比，用法更接近"一次性冷启动优化"而非"把快照当持续演化的构建工具"，两者是快照复用的两种不同使用模式。
 
 ## 相关概念
 
-[[microvm-snapshot-uniqueness]]、[[on-demand-image-loading]]
+[[microvm-snapshot-uniqueness]]、[[on-demand-image-loading]]、[[sandbox-checkpoint-rollback]]
 
 ## 相关来源
 
 - [[brooker-lambda-snapstart]] — Firecracker/Lambda 作者 Marc Brooker 提出分层快照树的设计思路：按 provenance 去重 + 分层密钥，声称最多减少 90% 数据搬运量
 - [[brooker-seven-years-of-firecracker]] — Aurora DSQL 案例：同一份快照的多个克隆实例共享未修改内存页，是与分层增量快照相邻但不同的省数据手段（见「开放问题」）
 - [[aws-lambda-microvms-agent-sandboxes]] — 又一个"从快照启动跳过初始化"的生产案例（AWS Lambda MicroVMs），但只用单层快照，未披露分层机制，也未讨论克隆唯一性问题
+- [[2605.22781]] — DeltaBox：把分层去重思路落到文件系统层（DeltaFS 动态 overlay 层栈 + XFS reflink），并与进程内存态的 CRIU/模板 fork 耦合为原子一致的 checkpoint 单元

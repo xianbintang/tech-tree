@@ -59,7 +59,7 @@ sources: [2609.19969, 2609.22978, 2020-agache-firecracker, 2022-li-rund, kata-co
 
 ## 相关概念
 
-[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]、[[sandbox-image-distribution]]、[[sandbox-density-overcommit]]、[[agentic-rollout-preemption]]
+[[firecracker]]、[[rund]]、[[kata-containers]]、[[nested-virtualization]]、[[pvm]]、[[gvisor]]、[[lightvm]]、[[unikernel]]、[[qemu]]、[[sandbox-image-distribution]]、[[sandbox-density-overcommit]]、[[agentic-rollout-preemption]]、[[sandbox-checkpoint-rollback]]
 
 ## 相关来源
 
