@@ -2,8 +2,8 @@
 title: "沙箱镜像分发与按需加载"
 aliases: [on-demand image loading, 按需镜像分发, 可组合镜像层, EROFS, composable environment layers]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2609.22978]
+updated: 2026-10-02
+sources: [2609.22978, 2026-amplify-modal-sandboxes]
 ---
 
 # 沙箱镜像分发与按需加载
@@ -24,6 +24,8 @@ sources: [2609.22978]
 - **3FS 按需加载**（区别于常见的"registry + P2P"组合）：镜像直接放在集群已有的 3FS 分布式文件系统上，按 3FS 的不对称 I/O 特性（大块顺序读写快、小随机 I/O 差）设计三条原则——写留本地盘、读按需+批量拉取、元数据尽量留本地（EROFS 支持 metadata/data 分离设备模式，只把 metadata 下载到本地）[[2609.22978]]。
 - **层合并优化**：为避免挂载层数过多拖慢创建，DSec 离线把小于阈值（如 3GB）的连续层合并成一对 EROFS 镜像（保留 overlayfs whiteout 语义表示文件删除），减少最终 mount 数量，同时保留跨镜像共享层的页缓存复用 [[2609.22978]]。
 - **microVM 侧的对应方案**：容器路线的 EROFS/overlayfs 组合不满足 microVM 需求（如 Docker overlay2 driver 不支持 overlayfs 数据目录，Firecracker 不支持 virtio-fs）；microVM 改用 OverlayBD 块级格式 + 团队自研的 ublk 用户态块设备框架，256KiB 粒度按需拉取 + 二级本地缓存，支持增量磁盘快照而不需要重新打包成 EROFS [[2609.22978]]。
+- **多区域场景下的镜像缓存碎片化**：DSec 的按需加载方案（EROFS + 3FS）隐含假设是单一集群/单一存储命名空间；Modal 的案例补上了一个 DSec 未覆盖的维度——当平台跨多个云区域运营（数据驻留、就近执行、聚合容量等需求驱动），镜像缓存会被分散到各区域，镜像可能需要按需跨区域拉取，冷启动路径必须同时权衡资源可用性和地域约束。文章还指出：只在单一区域运营的竞品可以更激进地预缓存镜像、让热容量贴近调度器，从而在冷启动基准上"刷分"，这类对比会掩盖单区域架构本身的局限——提示我们评估任何冷启动基准时都要先确认测试环境是单区域还是多区域 [[2026-amplify-modal-sandboxes]]。
+- **对任意镜像（而非一小组预优化镜像）做快速冷启动**会放大上述问题：镜像越不可预测，越难预缓存，环境初始化差异也越大；Modal 声称即便如此仍保持"state-of-the-art"冷启动表现，但未给出具体数字或第三方对比（详见「开放问题」）[[2026-amplify-modal-sandboxes]]。
 
 ## 工程要点与数字
 
@@ -42,11 +44,13 @@ sources: [2609.22978]
 
 - DSec 的"3GB 阈值合并连续层"是具体工程参数，论文未说明这个阈值如何调优、是否随负载类型变化。
 - 按需加载的收益量级（1.71×/1.76×）依赖于镜像访问比例确实很低（4%–13%）这一前提，不同团队的负载分布若访问比例更高，收益可能显著缩水——需要在自己的负载上先采样验证。
+- DSec 公开材料未讨论多区域部署；Modal 声称跨多区域仍保持"state-of-the-art"冷启动，但完全没有给出具体延迟数字、缓存命中率或与单区域竞品的第三方对比，这条声称目前无法验证，也无法知道 Modal 具体用了什么跨区域预取/缓存策略 [[2026-amplify-modal-sandboxes]]。
 
 ## 相关概念
 
-[[microvm-sandbox]]、[[sandbox-density-overcommit]]
+[[microvm-sandbox]]、[[sandbox-density-overcommit]]、[[microvm-placement]]
 
 ## 相关来源
 
 - [[2609.22978]] — DSec：提出可组合环境层 + EROFS/3FS 按需加载，给出量化消融数据
+- [[2026-amplify-modal-sandboxes]] — Modal 投资方报道：补充多区域部署下的镜像缓存碎片化问题与"任意镜像快速冷启动"的额外难度，无量化数字

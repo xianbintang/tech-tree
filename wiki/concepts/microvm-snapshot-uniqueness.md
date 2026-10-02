@@ -2,8 +2,8 @@
 title: "MicroVM Snapshot Uniqueness / 快照克隆唯一性恢复"
 aliases: [snapshot clone uniqueness, VM 克隆唯一性, 快照恢复唯一性, MADV_WIPEONSUSPEND, SysGenId, VmGenId]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecracker]
+updated: 2026-10-02
+sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecracker, 2026-amplify-modal-sandboxes]
 ---
 
 # MicroVM Snapshot Uniqueness / 快照克隆唯一性恢复
@@ -42,6 +42,7 @@ sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecrack
 - 只在单一 x86 机型（EC2 m5.12xlarge）上测量，跨 CPU 世代/ARM 平台的开销未知 [[2102.12892]]。
 - "VM 身份何时改变"缺乏对 serverless 场景明确适用的规则——Microsoft 现有的 VmGenId 变更规则（克隆/恢复/备份恢复触发,reboot/pause/resume/live migration 不触发）不一定适合 serverless,但本文没有给出 Lambda 实际采用的具体规则 [[2102.12892]]。
 - DSec（[[2609.22978]]）§6.3 描述的 microVM pause/resume 是"单实例挂起-恢复同一身份"，不涉及克隆出多个并发实例，因此本文的核心问题在 DSec 目前公开描述的机制下不直接适用；但 DSec 一周内维护 4,889 个 microVM 快照（Table 2），这些快照是否也被当作"启动多个独立沙箱的模板"使用、从而触发本文的问题，DSec 原文未说明，无法确认 [[2102.12892]]。
+- Modal 的 memory snapshot（alpha，同时恢复文件系统与运行中进程内存状态）同样完全没有提及这个问题——是目前记录到的又一个"从内存快照批量启动沙箱实例，但公开材料对唯一性风险只字不提"的案例（此前已有 AWS Lambda MicroVMs，见 [[snapshot-layering]]「开放问题」），进一步支持"产品化叙事里这类问题被系统性略过"的猜测，但仍无法确认是平台层已处理还是文档简化 [[2026-amplify-modal-sandboxes]]。
 
 ## 相关概念
 
@@ -50,4 +51,5 @@ sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecrack
 ## 相关来源
 
 - [[2102.12892]] — AWS Lambda 团队提出 MADV_WIPEONSUSPEND 与 SysGenId 两个 Linux 内核接口，解决 microVM 快照克隆后的实例唯一性问题
+- [[2026-amplify-modal-sandboxes]] — Modal 投资方报道：memory snapshot（alpha）同样未讨论克隆唯一性问题，是第二个观察到此模式的产品案例
 - [[brooker-lambda-snapstart]] — Firecracker/Lambda 作者 Marc Brooker 的科普博文，直接引用本概念的论文原文，并补充了连接/协议状态这一类唯一性问题未覆盖的"克隆之痛"
