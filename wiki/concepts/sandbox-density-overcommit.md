@@ -2,8 +2,8 @@
 title: "沙箱高密度资源超卖"
 aliases: [sandbox density, high-density sandbox execution, container overcommit, sub-NUMA partitioning, latency-sensitive execution class, high-density resource management, CPU/memory overcommit, QoS-aware CPU scheduling, 内存共享与回收, core scheduling]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978]
+updated: 2026-10-02
+sources: [2609.19969, 2609.22978, 2026-amplify-modal-sandboxes]
 ---
 
 # 沙箱高密度资源超卖
@@ -27,6 +27,7 @@ sources: [2609.19969, 2609.22978]
 
 ## 工程要点与数字
 
+- Modal 的定性描述：单个物理 VM 可容纳数百个 sandbox（取决于每个 sandbox 的 CPU/内存需求），因为典型 sandbox 只占一小部分 core 和少量 RAM；文章强调这比"每环境一个 VM"效率高得多，且密度直接决定了能并行跑多少轨迹、进而决定训练/评测吞吐上限——与 DSec/DeepSeek 的核心论点一致，但 Modal **没有给出任何具体数字**（无每 VM sandbox 数、无 CPU/内存配比），只是投资方报道里的定性表述，不能当作可比较的密度基准 [[2026-amplify-modal-sandboxes]]。
 - V4.1-Flash 训练场景下，在可比工作负载配置下，sub-NUMA 分区优化把单物理节点支持的并发存活容器数从约 **1,000** 提升到 **2,500+**（以端到端可测退化出现前为界）[[2609.19969]]。
 - 内存消融（Figure 12，4 种 Firecracker 配置对照）：virtio-pmem+DAX 单独把峰值 host 内存降 **40.2%**，但把瞬时峰值 CPU 利用率从 26.5% 拉到 **41.4%**（冷访问同步缺页所致）；DAMON+balloon FPR 单独不改变峰值但把**时间积分**内存消耗降 **21.2%**、无显著 CPU 开销；两者叠加内存消耗最低。作者建议 CPU 受限场景可以只开 FPR、保留 virtio-blk [[2609.22978]]。
 - CPU QoS 消融（Figure 13，chess 延迟敏感任务 + 10%–50% BE 负载对照）：无保护基线在 50% BE 负载下每步延迟膨胀 **45.2%**；单独 `SCHED_IDLE` 只改善到 41.8%（改善幅度仅 3.4pp，因为 SMT 兄弟线程仍会争抢共享执行资源）；叠加 core scheduling 把膨胀压到 **17.3%**，且改善幅度随 BE 负载增大而增大 [[2609.22978]]。
@@ -53,3 +54,4 @@ sources: [2609.19969, 2609.22978]
 
 - [[2609.19969]] — 给出 sub-NUMA 分区带来的具体密度提升数字（1,000→2,500+）与 LS 执行类机制
 - [[2609.22978]] — DSec：virtio-pmem+DAMON 内存优化、SCHED_IDLE+core scheduling CPU QoS 的设计与量化消融
+- [[2026-amplify-modal-sandboxes]] — Modal 投资方报道：定性确认"单 VM 容纳数百个 sandbox"的密度论点与"密度决定训练吞吐上限"的因果链，无量化数字

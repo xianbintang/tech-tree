@@ -2,8 +2,8 @@
 title: "MicroVM Placement / 放置调度"
 aliases: [microVM placement, VM placement, uVM 放置, 沙箱放置调度, PAR 峰均比]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda]
+updated: 2026-10-02
+sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda, 2026-amplify-modal-sandboxes]
 ---
 
 # MicroVM Placement / 放置调度
@@ -23,6 +23,7 @@ sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda]
 - **预测无关（forecasting-free）的立场**：在 Lambda 生产流量上验证，µVM CPU 用量的最佳 p90 预测在整个生命周期上是 0（LSTM/TCN 给 50 步历史预测 20 步都失败），因此不走"预测用量 + Best-Fit/genetic algorithm"的传统路线，而是设计不依赖预测的算法 [[2021-balaji-fireplace]]。
 - **降维手段**：用 [[power-of-two-choices]] 把动作空间从"全部 PM"降到随机采样的 K 个候选，避免了需要全机群实时状态的可扩展性问题。
 - **决策算法**：详见 [[hindsight-imitation-learning]]——用离线可得的未来真实数据构造贪心"教师"（Hindsight 算法），再训练监督学习模型模仿它，得到一个只用当前特征做决策的在线策略。
+- **第三个生产实例：Modal 的"数据库 source of truth + 内存态调度器"架构，同样面临规模化分片问题**——Modal 的 sandbox 后端是 [[gvisor]] 容器而非 microVM，但放置问题的结构相同：调度器需要持续更新的集群状态视图才能做低延迟放置决策（因为每个决策都依赖"此刻"的可用容量），这套架构在较小规模下运作良好，但 Modal 公开承认在更大并发规模下单一调度器会成为瓶颈，需要做分片（partition）——而分片后维持跨机近似一致的容量视图本身随节点数/沙箱数增长而变难。文章只描述了问题，没有披露 Modal 实际采用的分片方案 [[2026-amplify-modal-sandboxes]]。
 
 ## 工程要点与数字
 
@@ -40,12 +41,14 @@ sources: [2021-balaji-fireplace, brooker-ten-years-of-lambda]
 - 未覆盖 µVM 创建/销毁时机的决策（何时提前销毁空闲实例省内存）和跨 PM 迁移——这是本问题设定之外的相邻子问题，作者列为未来工作 [[2021-balaji-fireplace]]。
 - 已核实 [[2609.22978]]（DSec）§7「Placement engine strategy」确认使用 power-of-k-choices（k 个节点选负载最低者）应对亚秒级数千沙箱突发与重度超卖，并辅以"本地视图叠加近期放置"和"每 edge 保留最终准入权"两个机制；但原文未给出 PAR 式目标函数或具体 k 值，与本文的目标函数/参数是否一致仍待正式精读 DSec 全文时核实。
 - DSec 全文未发现覆盖共享队列层面的 noisy-neighbor 公平性设计（对照 [[noisy-neighbor-queue-fairness]]），只覆盖了放置侧——如果我们的调度器也有共享提交队列，这可能是一个值得补的能力缺口。
+- Modal 具体如何给"内存态调度器"做分片（按资源池？按区域？一致性哈希？）完全未披露，只确认了"单点调度器在更大规模下会成为瓶颈"这一问题本身是真实存在的，不能从这篇报道推导出可复用的分片架构 [[2026-amplify-modal-sandboxes]]。
 
 ## 相关概念
 
-[[hindsight-imitation-learning]]、[[power-of-two-choices]]、[[microvm-snapshot-uniqueness]]、[[noisy-neighbor-queue-fairness]]
+[[hindsight-imitation-learning]]、[[power-of-two-choices]]、[[microvm-snapshot-uniqueness]]、[[noisy-neighbor-queue-fairness]]、[[gvisor]]
 
 ## 相关来源
 
 - [[2021-balaji-fireplace]] — 在 AWS Lambda 生产 Firecracker µVM 流量上系统化建模放置问题，提出 PAR 目标与预测无关的求解思路
 - [[brooker-ten-years-of-lambda]] — 确认 DSec §7 同样使用 power-of-k-choices 做沙箱放置，并补充队列层面 noisy-neighbor（[[noisy-neighbor-queue-fairness]]）的对照案例
+- [[2026-amplify-modal-sandboxes]] — Modal 投资方报道：数据库 source of truth + 内存态调度器架构在规模化后需要分片的第三个生产实例（gVisor 容器而非 microVM），只描述问题未披露方案

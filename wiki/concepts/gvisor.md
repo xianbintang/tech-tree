@@ -2,8 +2,8 @@
 title: "gVisor"
 aliases: [Google gVisor, runsc, Sentry, 用户态内核沙箱]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2020-anjali-firecracker-gvisor]
+updated: 2026-10-02
+sources: [2020-anjali-firecracker-gvisor, 2026-amplify-modal-sandboxes]
 ---
 
 # gVisor
@@ -14,7 +14,7 @@ Google 开源的 OCI 兼容沙箱容器运行时（`runsc`）：用 Go 写的用
 
 ## 为什么对我们重要
 
-gVisor 是我们研究方向关键词表（`config/interests.yaml`）里明确列出的隔离方案之一，也是 dsec-refs 阅读清单 B 类"隔离运行时/microVM"专门补读的一支——母论文 [[2609.22978]]（DSec）自己的隔离路线综述（§9）只提到 microVM、Kata、library OS、WebAssembly、unikernel、nested virtualization，完全没有讨论 gVisor，这是 DSec 论证链条里的一个空白，需要独立资料补齐才能完整评估"容器 vs microVM vs paravirtualization"这三条路线的取舍。
+gVisor 是我们研究方向关键词表（`config/interests.yaml`）里明确列出的隔离方案之一，也是 dsec-refs 阅读清单 B 类"隔离运行时/microVM"专门补读的一支——母论文 [[2609.22978]]（DSec）自己的隔离路线综述（§9）只提到 microVM、Kata、library OS、WebAssembly、unikernel、nested virtualization，完全没有讨论 gVisor，这是 DSec 论证链条里的一个空白，需要独立资料补齐才能完整评估"容器 vs microVM vs paravirtualization"这三条路线的取舍。Modal 的公开案例把这个空白补上了一部分：Modal 用 gVisor 作为其 sandbox 产品的隔离基础，支撑某 AI lab 10 万级（目标 100 万）并发 agentic RL 训练沙箱，是 gVisor 在"长生命周期、有状态、高并发"场景下已知最大规模的公开生产案例之一（但数字未经第三方验证，详见「开放问题」）[[2026-amplify-modal-sandboxes]]。
 
 ## 核心机制 / 主要变体
 
@@ -41,7 +41,8 @@ gVisor 是我们研究方向关键词表（`config/interests.yaml`）里明确�
 
 - 本页数字来自 gVisor release-20200127.0（2020 年 1 月版本），六年间 gVisor 网络性能等已有大幅迭代（论文自述相比更早的 release-20190304 版本网络吞吐提升近 800%），当前版本的真实数字需要独立验证，不能直接引用本页数字做选型依据。
 - gVisor 与 [[microvm-sandbox]]（Firecracker）在同等密度/并发目标下没有第三方在同一评测环境下做过直接对比（[[microvm-sandbox]] 页开放问题里也提到这一点），本页只能提供"两者各有短板、没有全面占优者"的定性结论。
-- 未找到 gVisor 在 agent/RL 训练沙箱场景（长生命周期、有状态、高并发文件 IO）下的公开评测数据，本页数字均来自 serverless 短生命周期场景的微基准，外推到我们的实际工作负载需要自己实测。
+- 公开的 gVisor 微基准（本页主数据来源）均来自 serverless 短生命周期场景；Modal 的案例提供了"长生命周期、有状态、高并发"场景下的生产级规模信号（10 万+并发沙箱），但**没有给出任何性能数字**（延迟、吞吐、密度、冷启动），只是一条"gVisor 能撑住这个规模"的厂商声称，不能替代实测基准 [[2026-amplify-modal-sandboxes]]。
+- Modal 文章未说明其 GPU-backed sandbox 是否也走 gVisor 隔离路径，还是对 GPU 场景改用了其它隔离机制——gVisor 对 GPU 直通/MMIO 密集型工作负载的隔离开销目前没有任何公开数据，这仍是空白 [[2026-amplify-modal-sandboxes]]。
 
 ## 相关概念
 
@@ -49,4 +50,5 @@ gVisor 是我们研究方向关键词表（`config/interests.yaml`）里明确�
 
 ## 相关来源
 
-- [[2020-anjali-firecracker-gvisor]] — 唯一来源：gVisor 与 Firecracker 的内核代码覆盖率 + 微基准对比研究（VEE'20），本页几乎所有事实与数字均出自此文
+- [[2020-anjali-firecracker-gvisor]] — gVisor 与 Firecracker 的内核代码覆盖率 + 微基准对比研究（VEE'20），本页几乎所有事实与数字均出自此文
+- [[2026-amplify-modal-sandboxes]] — Modal 投资方报道：gVisor 支撑某 AI lab 10 万级（目标 100 万）并发 agentic RL 训练沙箱的生产案例，无性能数字，仅作规模信号
