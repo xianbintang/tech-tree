@@ -2,8 +2,8 @@
 title: "沙箱镜像分发与按需加载"
 aliases: [on-demand image loading, 按需镜像分发, 可组合镜像层, EROFS, composable environment layers]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2609.22978]
+updated: 2026-10-02
+sources: [2609.22978, 2026-k8s-agent-sandbox-rl]
 ---
 
 # 沙箱镜像分发与按需加载
@@ -45,8 +45,9 @@ sources: [2609.22978]
 
 ## 相关概念
 
-[[microvm-sandbox]]、[[sandbox-density-overcommit]]
+[[microvm-sandbox]]、[[sandbox-density-overcommit]]、[[agent-sandbox-rl]]（编排层的互补方案：[[agent-sandbox-rl]] 的 `pipelined` 策略/预拉取/镜像重写是在调度何时拉、拉给谁的编排层面解决"拉取是瓶颈"，不改变镜像本身的存储格式；与本页"分层+按需"这种镜像格式层方案是两个不同层次，原则上可叠加，但未见公开评测验证组合收益）
 
 ## 相关来源
 
 - [[2609.22978]] — DSec：提出可组合环境层 + EROFS/3FS 按需加载，给出量化消融数据
+- [[2026-k8s-agent-sandbox-rl]] — 提供编排层（而非镜像格式层）解决拉取瓶颈的对照方案（`pipelined` 策略/预拉取/镜像重写）

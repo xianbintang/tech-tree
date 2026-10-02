@@ -2,8 +2,8 @@
 title: "Rollout Efficiency（Rollout 效率）"
 aliases: [rollout efficiency, rollout-efficiency taxonomy, rollout 成本优化]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2609.25463]
+updated: 2026-10-02
+sources: [2609.25463, 2026-k8s-agent-sandbox-rl]
 ---
 
 # Rollout Efficiency（Rollout 效率）
@@ -23,7 +23,7 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 **按机制（系统杠杆 vs 算法杠杆）**：
 - 系统杠杆——把已请求的 rollout 工作执行得更快，不改变请求了什么：
   - **Pipeline Decoupling**（流水线解耦）：让 rollout/训练并发，代价是策略滞后。详见 [[async-rl-training]]。
-  - **Resource-Aware Execution**（资源感知执行）：收割空闲/异构/共享容量，或降低单条 rollout 的显存/精度 footprint。
+  - **Resource-Aware Execution**（资源感知执行）：收割空闲/异构/共享容量，或降低单条 rollout 的显存/精度 footprint。一个具体的沙箱编排层实例：[[agent-sandbox-rl]] 的 `warm_per_task`（每任务一个预热副本）+ `colocate_replicas`（同池副本挤到一节点、只有第一个拉镜像）组合，专门针对"1 个 problem image 被 G 个 rollout 共享"的 RL 形状——它改善的是 claim 延迟尾部（同 image 第 2 个 rollout 不排队），**不改善 batch wall-clock**（wall 早被并发预算卡住），这是"资源感知执行"杠杆里"降尾延迟不降吞吐"这一子类的一个干净反例/补充案例 [[2026-k8s-agent-sandbox-rl]]。
   - **Scheduling & Load Balancing**（调度与负载均衡）：按预测长度排序/分组请求，减少长尾同步气泡；不改变生成算法或采样分布。
   - **Partial & Early-Stop Rollout**（部分/提前停止）：固定预算截断、暂停恢复、学习信号触发的提前停止；处于系统/算法杠杆边界（执行决策 vs 采样决策）。
   - **Speculative Decoding**（投机解码）：用旧策略/草稿模型的输出做草稿，目标策略一次验证；RL 场景特有的是"上一步的策略输出可以做这一步的草稿"。
@@ -55,8 +55,9 @@ Rollout 是 reasoning RL 训练里同步单步墙钟时间占比最高的阶段�
 
 ## 相关概念
 
-[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]
+[[grpo]]、[[async-rl-training]]、[[rollout-training-mismatch]]、[[agent-sandbox-rl]]
 
 ## 相关来源
 
 - [[2609.25463]] — 80 方法双重分类综述（机制×瓶颈），提出统一评估口径与可组合性分析，是本页大部分结论的唯一来源
+- [[2026-k8s-agent-sandbox-rl]] — 提供"资源感知执行"杠杆在沙箱编排层的具体实现样本（`warm_per_task`+`colocate_replicas`，claim 延迟 vs batch wall 的实测区分）
