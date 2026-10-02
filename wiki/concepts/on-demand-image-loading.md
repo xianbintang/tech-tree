@@ -2,7 +2,7 @@
 title: "On-demand Image Loading / 镜像按需加载"
 aliases: [on-demand container loading, 按需镜像加载, 稀疏加载, sparse loading, lazy loading]
 created: 2026-09-26
-updated: 2026-09-26
+updated: 2026-10-02
 sources: [2023-brooker-lambda-container-loading, brooker-lambda-snapstart]
 ---
 
@@ -48,7 +48,7 @@ sources: [2023-brooker-lambda-container-loading, brooker-lambda-snapstart]
 
 ## 相关概念
 
-[[microvm-placement]]
+[[microvm-placement]]、[[sandbox-image-distribution]]、[[agent-sandbox-rl]]（编排层互补方案：`pipelined` 预取窗口 + 预拉取 DaemonSet，不改变镜像加载粒度本身）
 
 ## 相关来源
 
