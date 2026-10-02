@@ -2,8 +2,8 @@
 title: "Agent Rollout 与 GPU 训练抢占解耦"
 aliases: [rollout preemption, 抢占安全 rollout, agent sandbox 与 worker container 解耦, preemption-safe resumption, rollout-training decoupling, agent loop 解耦, sandbox pause/resume, 抢占安全的 rollout 恢复]
 created: 2026-09-26
-updated: 2026-09-27
-sources: [2609.19969, 2609.22978]
+updated: 2026-10-02
+sources: [2609.19969, 2609.22978, 2604.28138]
 ---
 
 # Agent Rollout 与 GPU 训练抢占解耦
@@ -24,6 +24,7 @@ sources: [2609.19969, 2609.22978]
 - **沙箱层的暂停/恢复实现**（进程/VM 粒度）：容器用 `docker pause` 冻结进程树，再启用 `memory.swap.max` + `memory.reclaim` 主动回收匿名页和文件页内存；恢复时用 `MADV_WILLNEED` 预取内存映射再 `docker unpause`。microVM（Firecracker）把内存和执行状态存成完整快照，终止进程释放运行时内存；恢复时新起进程并从快照恢复 guest 执行 [[2609.19969]] [[2609.22978]]。
 - **比沙箱层更细的粒度：token 级状态持久化**（推理引擎侧，而非沙箱层）：生成可以在任意 token 边界几乎瞬间停止（token 级中断）；KV cache 和专家路由信息按 token 粒度持久化，新 checkpoint 上线后直接复用已持久化状态继续生成，不需要重新 prefill；配合按样本粒度的垃圾回收，及时释放已完成样本的状态。这套机制同时用于响应集群调度抢占信号，而不仅是模型 checkpoint 切换 [[2609.19969]]。
 - **Agent 自建环境（pack_diff）依赖同一套基础设施**：agent 在交互过程中可用增量磁盘快照把当前沙箱状态直接固化成可复用环境，供后续训练/评测任务直接消费，不需要单独的镜像构建流水线；为防止训练答案泄漏，构建环境的账号和跑训练的账号是分离的 [[2609.22978]]。
+- **另一种"解耦"路径——用语义感知的 checkpoint 直接复用 rollout 中间状态**：Crab 不改变 GPU/沙箱的生命周期绑定关系，而是让 tree-based RL（Tree GRPO）分支 rollout 可以直接从中间 checkpoint fork，不必重跑共享前缀；batch size 16、分支数 1–5 场景下实测 rollout token 减少 **40.0–64.2%**。这与本页 DeepSeek 架构解耦是两个不同层次的问题（本页是"训练抢占时 rollout 状态怎么保留"，Crab 是"同一条 rollout 轨迹的多个分支怎么避免重复执行"），但都依赖同一类底层能力——沙箱状态的快速保存与恢复，详见 [[sandbox-checkpoint-restore]] [[2604.28138]]。
 
 ## 工程要点与数字
 
@@ -44,9 +45,10 @@ sources: [2609.19969, 2609.22978]
 
 ## 相关概念
 
-[[sandbox-density-overcommit]]、[[microvm-sandbox]]
+[[sandbox-density-overcommit]]、[[microvm-sandbox]]、[[sandbox-checkpoint-restore]]
 
 ## 相关来源
 
 - [[2609.19969]] — 从"使用方"角度描述该架构改动的动机与训练侧效果（跨 scaffold RL、异步 post-training 基础设施），补充 token 级状态持久化机制
 - [[2609.22978]] — DSec §6.2–6.3：rollout 与 GPU 训练解耦、pause/resume 协同抢占的生产经验（无量化评估）
+- [[2604.28138]] — Crab：tree-RL rollout 分支用语义感知 checkpoint fork 复用中间状态，token 减少 40.0–64.2%，是本页"状态保留"问题在 rollout 分支场景下的另一种实现
