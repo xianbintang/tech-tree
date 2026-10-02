@@ -2,8 +2,8 @@
 title: "Rollout/Training 分离调度（Rollout-Training Disaggregation）"
 aliases: [rollout-training disaggregation, rollout/训练分离, 异步 RL 资源拆分, elastic rollout]
 created: 2026-09-29
-updated: 2026-09-29
-sources: [2026-09-29-moe-rl-eks-efa-deepep]
+updated: 2026-10-03
+sources: [2026-09-29-moe-rl-eks-efa-deepep, 2501.12948]
 ---
 
 # Rollout/Training 分离调度
@@ -31,7 +31,7 @@ sources: [2026-09-29-moe-rl-eks-efa-deepep]
 
 ## 争议与矛盾
 
-（暂无跨来源分歧，仅一篇来源）
+- 不是所有工作都走"资源池级空间拆分"这条路：DeepSeek-R1 的 RL 框架（Rollout/Inference/规则奖励/Training 四模块）采用的是**单一集群内按阶段时分复用同一批 GPU**——每个模块执行完就把模型从显存卸载到系统内存/磁盘，为下一阶段腾显存，而不是把 rollout 和 training 分到两个独立资源池。这是省硬件、不需要跨池调度，但有显式的阶段切换开销（论文未给出切换延迟数字）；disaggregation 路线是用双资源池换取独立弹性伸缩和无切换开销。两条路线没有被同一篇来源直接对比过，各自的适用边界（集群规模、模块切换频率、能否容忍切换延迟）是开放问题 [[2501.12948]]。
 
 ## 开放问题
 
@@ -46,3 +46,4 @@ sources: [2026-09-29-moe-rl-eks-efa-deepep]
 ## 相关来源
 
 - [[2026-09-29-moe-rl-eks-efa-deepep]] — AWS 博客，提出 EKS 上按中断容忍度拆分 rollout（Spot）与 training（稳定容量）资源池的架构模式
+- [[2501.12948]] — Appendix B.1 给出对照设计：单集群内按阶段时分复用 GPU + 显存按需换入换出的四模块 RL 框架，是与资源池级空间拆分不同的另一种调度取舍

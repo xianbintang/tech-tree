@@ -51,7 +51,7 @@ sources: [2609.27321, 2609.27717, 2509.02547, 2511.09586, 2509.13311, 2609.19969
 
 ## 相关概念
 
-[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）
+[[vhd-play]]、[[skill-to-task-pipeline]]、[[agentic-rl-environments]]、[[agentic-rl]]、[[gef-loop]]、[[generator-verifier-asymmetry]]、[[recreation-bench]]、[[hybrid-computer-use-agent]]、[[benchmark-item-validity-audit]]（同一枚硬币的另一面：环境先行管线的 reward hacking 风险发生在训练时，[[benchmark-item-validity-audit]] 讨论的 verifier 绕过则发生在评测时）、[[rlvr]]（这个概念关注"训练环境本身怎么自动构造"，[[rlvr]] 关注"奖励本身怎么验证"，两者是同一条流水线里相邻但不同的问题——DeepSeek-R1 的数学/代码规则奖励是 RLVR 侧最早的大规模实证，尚未涉及本页讨论的 agentic 环境自动生成）
 
 ## 相关来源
 
