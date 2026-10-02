@@ -2,8 +2,8 @@
 title: "Firecracker"
 aliases: [Firecracker VMM, AWS Firecracker, crosvm 衍生 VMM]
 created: 2026-09-26
-updated: 2026-09-26
-sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2020-anjali-firecracker-gvisor]
+updated: 2026-10-02
+sources: [2020-agache-firecracker, 2022-li-rund, kata-containers-architecture, 2020-anjali-firecracker-gvisor, 2026-ai-engineer-fork-to-fleet]
 ---
 
 # Firecracker
@@ -19,6 +19,8 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 ## 核心机制 / 主要变体
 
 - **架构**：一个 Firecracker 进程管理一个 MicroVM，只实现网络/块设备（virtio）、串口、部分 i8042；不提供 BIOS、PCI、任意内核启动、VM 迁移；代码量约 5 万行 Rust（QEMU 的 4%）[[2020-agache-firecracker]]。
+- **谱系来源**：Firecracker fork 自 **crosvm**——Google 为了在 Chromebook 上跑 Linux VM 而开发的 Rust VMM；Cloud Hypervisor 是同源但范围更通用、由多家公司共同维护的另一支 Rust VMM。三者共同的设计动机是用内存安全的 Rust 实现替代 QEMU 历史上反复被攻破的 C 语言设备模拟代码 [[2026-ai-engineer-fork-to-fleet]]。
+- **设备级 jail**：VMM 可以把每个模拟设备的宿主侧进程分别关进独立权限沙箱——block 设备后端只拿块资源权限，network 设备后端只拿网络权限，即便某个设备被攻破也不能直接获得其它设备权限，是 Jailer 之外更细粒度的一层最小权限设计 [[2026-ai-engineer-fork-to-fleet]]。
 - **Jailer**：在 Firecracker 进程外再包一层 chroot + pid/net namespace + seccomp-bpf（白名单 24 syscall/30 ioctl）+ 降权，作为 VMM 本身被攻破时的第二道防线 [[2020-agache-firecracker]]。
 - **REST API**：通过 Unix socket 配置/启停 MicroVM，支持先配置后启动以降低感知延迟 [[2020-agache-firecracker]]。
 - **存储集成限制**：不支持 virtio-fs，只能走块设备透传；DSec 因此为 Firecracker 后端设计了 OverlayBD 格式镜像 + ublk 用户态块设备 + 分布式文件系统（3FS）按需加载的组合方案 [[2020-agache-firecracker]]（转引自 DSec §3.3）。
@@ -54,3 +56,4 @@ Firecracker 是"隔离运行时/microVM"这条技术路线里被引用最多的�
 - [[2022-li-rund]] — 用 Kata-FC（Firecracker 作 hypervisor）做对比基线，揭示接入完整安全容器软件栈后 Firecracker 单层优化的局限
 - [[kata-containers-architecture]] — Kata Containers 架构文档，说明 Firecracker 作为 hypervisor 后端接入 Kata（Kata-FC 配置）时所在的通用架构位置
 - [[2020-anjali-firecracker-gvisor]] — 独立第三方内核代码覆盖率与微基准对比研究，给出 Firecracker 相对 gVisor/LXC 的量化数字（syscall 白名单、内核代码覆盖率、网络延迟、文件吞吐）
+- [[2026-ai-engineer-fork-to-fleet]] — OpenAI 工程师讲座：补充 crosvm/Cloud Hypervisor 谱系来源与设备级 jail 机制
