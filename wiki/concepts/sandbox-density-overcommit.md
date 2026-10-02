@@ -47,7 +47,7 @@ sources: [2609.19969, 2609.22978]
 
 ## 相关概念
 
-[[agentic-rollout-preemption]]、[[microvm-sandbox]]、[[sandbox-image-distribution]]
+[[agentic-rollout-preemption]]、[[microvm-sandbox]]、[[sandbox-image-distribution]]、[[sandbox-checkpoint-restore]]
 
 ## 相关来源
 

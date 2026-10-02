@@ -45,7 +45,7 @@ sources: [2102.12892, brooker-lambda-snapstart, brooker-seven-years-of-firecrack
 
 ## 相关概念
 
-[[microvm-placement]]、[[snapshot-layering]]
+[[microvm-placement]]、[[snapshot-layering]]、[[sandbox-checkpoint-restore]]
 
 ## 相关来源
 
