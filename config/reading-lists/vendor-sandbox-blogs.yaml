@@ -1,0 +1,23 @@
+# 新订阅的沙箱厂商 / 隔离技术博客的存量精选（gVisor、Modal、Prime Intellect、Edera、Beam）。
+# 订阅首次运行会把存量记为已见，不会推送，所以把值得读的挑到这里。
+# 新增条目后运行：uv run python -m pipeline.reading_list create config/reading-lists/vendor-sandbox-blogs.yaml
+
+name: vendor-sandbox-blogs
+labels: [reading-list, feeds-backlog]
+
+categories:
+  - key: A
+    title: "沙箱厂商一手工程博客"
+    description: |
+      各家沙箱产品的一手工程披露：百万级并发、启动延迟拆解、隔离技术选型、沙箱逃逸。
+      精读时整理每家的数字（并发、冷启动、密度）和架构选择，和 [[2609.22978]]（DSec）、[[microvm-sandbox]] 以及我们平台放在一张对比表里；
+      厂商文章的结论打折扣，标出哪些数字有实测依据、哪些是营销口径。
+    items:
+      - {type: post, id: 2026-04-23-gvisor-tencent-agentic-rl-sandboxes, title: "Scaling Agentic-RL Sandboxes to the Millions with gVisor at Tencent（gVisor Blog）", url: "https://gvisor.dev/blog/2026/04/23/scaling-agentic-rl-sandboxes-to-the-millions-with-gvisor-at-tencent/", why: "腾讯用 gVisor 跑百万级 agentic RL 沙箱：同公司的一手实践，优先读"}
+      - {type: post, id: 2026-04-15-gvisor-magi, title: "Multi-Agent gVisor Isolation (MAGI)（gVisor Blog）", url: "https://gvisor.dev/blog/2026/04/15/magi-multi-agent-gvisor-isolation/", why: "多 agent 场景下的 gVisor 隔离方案"}
+      - {type: post, id: 2026-06-22-modal-sandbox-startup-latency, title: "Unpacking sandbox startup latency（Modal Blog）", url: "https://modal.com/blog/unpacking-sandbox-startup-latency", why: "沙箱启动延迟逐段拆解：冷启动优化的对标数据"}
+      - {type: post, id: 2026-07-16-modal-1m-concurrent-sandboxes, title: "Scaling to 1 million concurrent sandboxes in seconds（Modal Blog）", url: "https://modal.com/blog/scaling-to-1-million-concurrent-sandboxes-in-seconds", why: "秒级拉起百万并发沙箱：调度与控制面的规模化做法"}
+      - {type: post, id: 2026-09-23-prime-intellect-sandboxes, title: "Prime Sandboxes: MicroVMs for Agentic RL Training at Scale（Prime Intellect）", url: "https://primeintellect.ai/blog/sandboxes", why: "约 3000 万个沙箱的实践：容器形态 API + microVM 底座，镜像就近缓存与亲和调度（学习路线第 3 步已列）"}
+      - {type: post, id: 2026-08-25-prime-intellect-sandbox-escape, title: "Universal offline sandbox escape（Prime Intellect）", url: "https://primeintellect.ai/blog/universal-offline-sandbox-escape", why: "RL 训练中模型的沙箱逃逸：reward hacking 落到隔离层的真实案例"}
+      - {type: post, id: 2026-05-01-edera-kata-firecracker-gvisor, title: "Kata vs Firecracker vs gVisor: isolation compared（Edera）", url: "https://edera.dev/stories/kata-vs-firecracker-vs-gvisor-isolation-compared", why: "三种主流隔离方案的横向对比，隔离选型的参照"}
+      - {type: post, id: beam-sandbox-code-execution-rlvr, title: "Sandbox code execution for RLVR（Beam）", url: "https://www.beam.cloud/blog/sandbox-code-execution-rlvr", why: "RLVR 里代码执行沙箱的需求与做法（厂商视角）"}

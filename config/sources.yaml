@@ -111,3 +111,42 @@ posts:
     - {name: Latent Space, type: rss, url: "https://www.latent.space/feed", weight: 1}
     - {name: Dwarkesh Patel, type: rss, url: "https://www.dwarkesh.com/feed", weight: 1}
     - {name: Simon Willison, type: rss, url: "https://simonwillison.net/atom/everything/", weight: 0}
+
+    # ───────── 对标开源项目的 release（GitHub releases.atom）─────────
+    # 沙箱 / 运行时：发版不频繁、每次都值得看 → weight 3；RL 框架 → weight 2。
+    # 不订：gVisor（每周例行发版，改订其博客）、E2B / Arrakis（发版是 SDK 或 commit 号，噪声大）。
+    - {name: Firecracker releases, type: rss, url: "https://github.com/firecracker-microvm/firecracker/releases.atom", weight: 3}
+    - {name: Cloud Hypervisor releases, type: rss, url: "https://github.com/cloud-hypervisor/cloud-hypervisor/releases.atom", weight: 3}
+    - {name: Kata Containers releases, type: rss, url: "https://github.com/kata-containers/kata-containers/releases.atom", weight: 3}
+    - {name: k8s agent-sandbox releases, type: rss, url: "https://github.com/kubernetes-sigs/agent-sandbox/releases.atom", weight: 3}
+    - {name: AgentENV releases, type: rss, url: "https://github.com/kvcache-ai/AgentENV/releases.atom", weight: 3}
+    - {name: CubeSandbox releases, type: rss, url: "https://github.com/TencentCloud/CubeSandbox/releases.atom", weight: 3}
+    - {name: verl releases, type: rss, url: "https://github.com/volcengine/verl/releases.atom", weight: 2}
+    - {name: slime releases, type: rss, url: "https://github.com/THUDM/slime/releases.atom", weight: 2}
+    - {name: AReaL releases, type: rss, url: "https://github.com/inclusionAI/AReaL/releases.atom", weight: 2}
+    - {name: SkyRL releases, type: rss, url: "https://github.com/NovaSky-AI/SkyRL/releases.atom", weight: 2}
+    - {name: Agent Lightning releases, type: rss, url: "https://github.com/microsoft/agent-lightning/releases.atom", weight: 2}
+    - {name: Prime verifiers releases, type: rss, url: "https://github.com/PrimeIntellect-ai/verifiers/releases.atom", weight: 2}
+    - {name: Harbor releases, type: rss, url: "https://github.com/laude-institute/harbor/releases.atom", weight: 2}
+
+    # ───────── 沙箱厂商与隔离技术博客 ─────────
+    - {name: gVisor Blog, type: rss, url: "https://gvisor.dev/blog/index.xml", weight: 4}
+    - {name: Modal Blog, type: sitemap, url: "https://modal.com/sitemap.xml", pattern: '^https://modal\.com/blog/[a-z0-9-]+$', weight: 1}
+    - {name: Prime Intellect Blog, type: sitemap, url: "https://www.primeintellect.ai/sitemap.xml", pattern: '^https://(www\.)?primeintellect\.ai/blog/[a-z0-9-]+$', weight: 2}
+    - {name: Edera Blog, type: sitemap, url: "https://edera.dev/sitemap.xml", pattern: '^https://edera\.dev/(blog|stories)/[a-z0-9-]+$', weight: 1}
+    - {name: Beam Blog, type: sitemap, url: "https://www.beam.cloud/sitemap.xml", pattern: '^https://www\.beam\.cloud/blog/[a-z0-9-]+$', weight: 0}
+
+    # ───────── 系统会议、内核与云原生社区 ─────────
+    # USENIX 网站无论文级 feed；这里订它的新闻（会议论文集发布、;login: 文章），看到会议发布再建阅读清单。
+    - {name: USENIX News, type: rss, url: "https://www.usenix.org/rss.xml", weight: 1}
+    - {name: LWN.net, type: rss, url: "https://lwn.net/headlines/rss", weight: 0}
+    - {name: CNCF Blog, type: rss, url: "https://www.cncf.io/feed/", weight: 0}
+
+    # ───────── 社区讨论（噪声大，只让命中关键词的进候选）─────────
+    - {name: Hacker News Best, type: rss, url: "https://hnrss.org/best", weight: 0}
+    - {name: r/LocalLLaMA, type: rss, url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day", weight: 0}
+
+    # ───────── 中文技术媒体与团队博客（配合 interests.yaml 里的中文关键词）─────────
+    # 未订：InfoQ 中文（对非浏览器 UA 返回 2019 年的旧 feed）、知乎 / 公众号（无官方 RSS）。
+    - {name: 量子位, type: rss, url: "https://www.qbitai.com/feed", weight: 0}
+    - {name: 美团技术团队, type: rss, url: "https://tech.meituan.com/feed", weight: 0}

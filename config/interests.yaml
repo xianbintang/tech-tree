@@ -74,6 +74,21 @@ scoring:
     - tool use
     - multi-turn agent
     - long-horizon agent
+    # 中文关键词（中文媒体 / 团队博客的标题）
+    - 沙箱
+    - 沙盒
+    - 强化学习
+    - 后训练
+    - 智能体训练
+    - 安全容器
+    - 容器运行时
+    - 微虚拟机
+    - 冷启动
+    - 弹性计算
+    - 执行环境
+    - gpu 调度
+    - gpu调度
+    - 训练框架
   # 命中即丢弃
   negative_keywords:
     - medical imaging
